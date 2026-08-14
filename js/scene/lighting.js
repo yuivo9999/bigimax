@@ -1,4 +1,5 @@
 // 场景构建：灯光系统
+import * as THREE from 'three';
 import { state } from '../core/state.js';
 import { HALL } from '../data/hall-config.js';
 
