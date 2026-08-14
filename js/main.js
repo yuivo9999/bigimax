@@ -1,4 +1,4 @@
-// ======== 主入口：协调各模块，启动体验 ========
+// ======== 主入口：协调各模块，启动体验（含逐步诊断） ========
 import * as THREE from 'three';
 
 // 核心
@@ -39,101 +39,165 @@ import { updateSpatialListener } from './media/audio-spatial.js';
 import { state } from './core/state.js';
 import { inputState } from './controls/input-state.js';
 
+// ======== 诊断：在加载画面显示当前步骤 ========
+function diag(step, detail) {
+    var el = document.getElementById('loadingText');
+    var sub = document.getElementById('loadingSubtext');
+    if (el) el.textContent = step;
+    if (sub) sub.textContent = detail || '';
+    console.log('[IMAX] ' + step + (detail ? ' — ' + detail : ''));
+}
+
+function diagError(step, err) {
+    var msg = '❌ ' + step + ' 失败: ' + (err && err.message ? err.message : String(err));
+    diag(msg, '请截图发回此信息');
+    // 在加载画面追加红色错误块（确保可见）
+    var ls = document.getElementById('loadingScreen');
+    if (ls) {
+        var eb = document.createElement('div');
+        eb.style.cssText = 'margin-top:20px;padding:14px 18px;background:#3a0a0a;border:1px solid #ff4444;border-radius:8px;color:#ff6b6b;font-size:13px;line-height:1.7;max-width:85%;text-align:left;word-break:break-all;';
+        eb.innerHTML = '<b>初始化失败</b><br>' + msg.replace(/❌ /, '') + '<br><br><span style="font-size:11px;color:#999;">请按 F12 打开开发者工具 → Console 标签查看完整错误</span>';
+        ls.appendChild(eb);
+        // 停止转圈动画
+        var loader = ls.querySelector('.loader');
+        if (loader) loader.style.animation = 'none';
+    }
+    console.error('[IMAX ERROR]', msg, err);
+    throw err; // 仍然抛出，让调用者知道失败了
+}
+
 init();
 
-function init() {
-    // 1. 引擎
-    initEngine('#canvas-container');
+async function init() {
+    try {
+        diag('✅ 模块加载完成', 'Three.js r' + THREE.REVISION + ' · 开始构建场景...');
 
-    // 2. 材质 + 场景
-    initMaterials();
-    buildEnvironment();
-    buildScreen();
-    buildSeats();
-    buildStairs();
-    setupLighting();
-    createDefaultScreenContent();
-    addDustParticles();
+        // 1. 引擎
+        try { initEngine('#canvas-container'); }
+        catch (e) { diagError('引擎初始化', e); }
+        diag('✅ 1/7 引擎就绪', 'WebGL 渲染器已创建');
 
-    // 3. 控制器
-    initFPS();
-    setupTouchControls();
-    setupDPad();
-    setupAutoHide();
-    setupMediaUpload('videoInput');
+        // 2. 材质 + 场景
+        try { initMaterials(); }
+        catch (e) { diagError('材质生成', e); }
+        diag('✅ 2/7 材质就绪', '程序化纹理已生成');
 
-    // 4. UI 面板
-    initSelectMenu();
-    initVideoControls();
+        try { buildEnvironment(); }
+        catch (e) { diagError('环境构建', e); }
+        try { buildScreen(); }
+        catch (e) { diagError('银幕构建', e); }
+        try { buildSeats(); }
+        catch (e) { diagError('座椅构建', e); }
+        try { buildStairs(); }
+        catch (e) { diagError('阶梯构建', e); }
+        try { setupLighting(); }
+        catch (e) { diagError('灯光设置', e); }
+        diag('✅ 3/7 场景构建完成', '环境·银幕·座椅·阶梯·灯光');
 
-    // 5. 选座确认按钮绑定
-    document.getElementById('seatConfirmBtn').addEventListener('click', () => {
-        confirmSeatSelect();
-        resetHideTimer();
-    });
+        try { createDefaultScreenContent(); }
+        catch (e) { diagError('默认内容', e); }
+        try { addDustParticles(); }
+        catch (e) { diagError('粒子系统', e); }
 
-    // 6. 隐藏加载画面
-    setTimeout(() => {
-        document.getElementById('loadingScreen').classList.add('hidden');
-        showToast('👆 使用下方摇杆在影厅中自由走动');
-        showToast('⬇️ SELECT / START 打开功能菜单');
-    }, 2000);
+        // 3. 控制器
+        try { initFPS(); }
+        catch (e) { diagError('FPS控制器', e); }
+        setupTouchControls();
+        try { setupDPad(); }
+        catch (e) { diagError('方向键', e); }
+        try { setupAutoHide(); }
+        catch (e) { diagError('自动隐藏', e); }
+        try { setupMediaUpload('videoInput'); }
+        catch (e) { diagError('媒体上传', e); }
+        diag('✅ 4/7 控制器就绪', '摇杆·方向键·媒体上传');
 
-    // 7. 渲染循环
-    lastTime = performance.now();
-    animate();
+        // 4. UI 面板
+        try { initSelectMenu(); }
+        catch (e) { diagError('SELECT菜单', e); }
+        try { initVideoControls(); }
+        catch (e) { diagError('视频控制面板', e); }
 
-    // 标记初始化成功（供看门狗判断）
-    window.__imaxLoaded = true;
+        // 5. 选座确认按钮绑定
+        try {
+            document.getElementById('seatConfirmBtn').addEventListener('click', function () {
+                confirmSeatSelect();
+                resetHideTimer();
+            });
+        } catch (e) { /* 容忍 */ }
+
+        diag('✅ 5/7 UI 面板就绪', 'SELECT菜单 · START控制面板');
+
+        // 6. 启动渲染循环
+        lastTime = performance.now();
+        animate();
+        diag('✅ 6/7 渲染循环已启动', '即将进入影厅...');
+
+        // 标记初始化成功
+        window.__imaxLoaded = true;
+
+        // 7. 隐藏加载画面
+        setTimeout(function () {
+            var ls = document.getElementById('loadingScreen');
+            if (ls) ls.classList.add('hidden');
+            showToast('👆 使用下方摇杆在影厅中自由走动');
+            showToast('⬇️ SELECT / START 打开功能菜单');
+        }, 1500);
+
+        diag('✅ 7/7 全部完成', 'IMAX GT 影厅已就绪');
+
+    } catch (e) {
+        // 如果是 diagError 抛出的，上面已经显示了错误
+        if (!window.__imaxLoaded) {
+            diagError('未知步骤', e);
+        }
+    }
 }
 
 // 触摸摇杆绑定
 function setupTouchControls() {
-    setupJoystick('moveJoystickBase', 'moveStick', (dx, dy) => {
+    setupJoystick('moveJoystickBase', 'moveStick', function (dx, dy) {
         inputState.moveX = dx;
-        inputState.moveZ = -dy; // 屏幕向上为负，对应前进
+        inputState.moveZ = -dy;
     });
-    setupJoystick('lookJoystickBase', 'lookStick', (dx, dy) => {
+    setupJoystick('lookJoystickBase', 'lookStick', function (dx, dy) {
         inputState.lookX = dx;
         inputState.lookY = dy;
     });
 }
 
 // Toast 提示（全局可调用）
-let toastTimer = null;
+var toastTimer = null;
 export function showToast(msg) {
-    const toast = document.getElementById('hintToast');
+    var toast = document.getElementById('hintToast');
+    if (!toast) return;
     toast.textContent = msg;
     toast.classList.add('show');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toast.classList.remove('show'), 2500);
+    toastTimer = setTimeout(function () { toast.classList.remove('show'); }, 2500);
 }
 window.showToast = showToast;
 
 // ======== 渲染主循环 ========
-let lastTime = 0;
+var lastTime = 0;
 function animate() {
     requestAnimationFrame(animate);
 
-    const now = performance.now();
-    const dt = Math.min((now - lastTime) / 1000, 0.1);
+    var now = performance.now();
+    var dt = Math.min((now - lastTime) / 1000, 0.1);
     lastTime = now;
 
     updateFPS(dt);
     updateDust();
 
-    const tex = state.refs.videoTexture;
-    const mediaElem = state.refs.mediaElement;
-    // 仅视频需要每帧刷新 VideoTexture
+    var tex = state.refs.videoTexture;
+    var mediaElem = state.refs.mediaElement;
     if (tex && mediaElem && mediaElem.tagName === 'VIDEO' && !mediaElem.paused) tex.needsUpdate = true;
 
-    // 媒体控制面板：循环检测 + 显示刷新（视频/音频通用）
     if (mediaElem && !mediaElem.paused) {
         checkLoopAndSeek();
         updateVCDisplay();
     }
 
-    // 立体空间音效：每帧更新听者位置（第一人称声音方位感）
     updateSpatialListener(state.camera);
 
     state.renderer.render(state.scene, state.camera);
