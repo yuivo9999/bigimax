@@ -222,16 +222,44 @@
     <!-- 提示 Toast -->
     <div class="hint-toast" id="hintToast"></div>
 
-    <!-- Three.js 依赖（CDN） -->
+    <!-- Three.js 依赖（本地打包，避免 CDN 被墙/不稳定） -->
     <script type="importmap">
     {
         "imports": {
-            "three": "https://unpkg.com/three@0.162.0/build/three.module.js"
+            "three": "./js/vendor/three.module.js"
         }
     }
     </script>
 
     <!-- 主程序入口 -->
     <script type="module" src="js/main.js"></script>
+
+    <!-- 看门狗：若模块加载/初始化失败，8 秒后在加载画面显示错误，避免永久卡屏 -->
+    <script>
+        window.__imaxLoaded = false;
+        setTimeout(function () {
+            if (window.__imaxLoaded) return;
+            var ls = document.getElementById('loadingScreen');
+            if (!ls) return;
+            var canvas = document.querySelector('#canvas-container canvas');
+            var errEl = ls.querySelector('#loadError');
+            if (!errEl) {
+                errEl = document.createElement('div');
+                errEl.id = 'loadError';
+                errEl.style.cssText = 'margin-top:18px;color:#ff6b6b;font-size:13px;line-height:1.6;max-width:80%;text-align:center;';
+                ls.appendChild(errEl);
+            }
+            if (!canvas) {
+                errEl.innerHTML = '⚠️ 3D 引擎加载失败<br>请检查：浏览器是否支持 WebGL、网络是否可访问本地资源<br>或按 F12 查看控制台详细错误';
+            }
+        }, 8000);
+        window.addEventListener('error', function (e) {
+            if (e && e.message) {
+                var ls = document.getElementById('loadingScreen');
+                var errEl = ls && ls.querySelector('#loadError');
+                if (errEl && !window.__imaxLoaded) errEl.innerHTML = '⚠️ 运行错误：' + e.message;
+            }
+        });
+    </script>
 </body>
 </html>
