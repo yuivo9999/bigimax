@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>IMAX GT 影厅 · 沉浸式体验</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- 加载画面 -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loader"></div>
+        <div class="loading-text">正在构建 IMAX GT 影厅</div>
+        <div class="loading-subtext">27.8 × 20.3 m · 第一人称模式</div>
+    </div>
+
+    <!-- 顶部信息 -->
+    <div class="top-bar" id="topBar">
+        <h1>IMAX GT LASER</h1>
+        <p>华南MALL激光店 · 沉浸式体验</p>
+    </div>
+
+    <div class="imax-badge" id="imaxBadge">IMAX</div>
+
+    <!-- 3D 画布 -->
+    <div id="canvas-container"></div>
+
+    <!-- ========== 控制区域（下半部分：摇杆+方向键）========== -->
+    <div class="controls-area" id="controlsArea">
+        <div class="control-row">
+            <!-- 左侧：方向键 + 移动摇杆 -->
+            <div class="left-controls">
+                <div class="dpad" id="dpad">
+                    <div class="dpad-btn dpad-up" data-dir="forward">▲</div>
+                    <div class="dpad-btn dpad-down" data-dir="backward">▼</div>
+                    <div class="dpad-btn dpad-left" data-dir="left">◀</div>
+                    <div class="dpad-btn dpad-right" data-dir="right">▶</div>
+                    <div class="dpad-btn dpad-center">●</div>
+                </div>
+                <div class="joystick-base" id="moveJoystickBase">
+                    <div class="joystick-stick" id="moveStick"></div>
+                </div>
+            </div>
+
+            <!-- 右侧：视角摇杆 -->
+            <div class="right-controls">
+                <div class="look-joystick-base" id="lookJoystickBase">
+                    <div class="look-joystick-stick" id="lookStick"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 状态栏 -->
+        <div class="status-bar">
+            <span class="status-text" id="statusText">👆 使用摇杆或方向键在影厅中走动</span>
+        </div>
+    </div>
+
+    <!-- ========== 底部常驻按钮（SELECT + START）始终显示 ========== -->
+    <div class="bottom-buttons" id="bottomButtons">
+        <button class="bottom-btn select-btn" id="selectBtn">
+            <span class="btn-icon">☰</span>
+            SELECT
+        </button>
+        <button class="bottom-btn start-btn" id="startBtn">
+            <span class="btn-icon">▶</span>
+            START
+        </button>
+    </div>
+
+    <!-- 隐藏的媒体上传 input（视频 / 音频通用） -->
+    <input type="file" id="videoInput" accept="video/mp4,video/webm,video/ogg,video/mov,video/quicktime,video/*,audio/mp3,audio/wav,audio/ogg,audio/m4a,audio/*">
+
+    <!-- ========== SELECT 功能菜单（中央竖形弹出）========== -->
+    <div class="menu-overlay" id="menuOverlay"></div>
+    <div class="select-menu" id="selectMenu">
+        <div class="menu-header">
+            <h3>— 功能菜单 —</h3>
+        </div>
+        <div class="menu-list">
+            <div class="menu-item" id="menuVideo">
+                <span class="menu-icon">📹</span>
+                <span class="menu-label">打开视频/音频</span>
+                <span class="menu-status">本地文件</span>
+            </div>
+            <div class="menu-item" id="menuAudio">
+                <span class="menu-icon">🔇</span>
+                <span class="menu-label">立体音效：关</span>
+            </div>
+            <div class="menu-item" id="menuLights">
+                <span class="menu-icon">🌙</span>
+                <span class="menu-label">影厅灯光：关</span>
+            </div>
+            <div class="menu-item" id="menuSeat">
+                <span class="menu-icon">🎫</span>
+                <span class="menu-label">选择座位视角</span>
+                <span class="menu-status">传送到达</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 选座弹窗 ========== -->
+    <div class="seat-picker-modal" id="seatPicker">
+        <div class="sp-header">
+            <h3>选择座位</h3>
+        </div>
+        <div class="sp-body">
+            <div class="sp-field">
+                <label>排数</label>
+                <select id="seatRowSel"><option value="">-- 选择 --</option></select>
+            </div>
+            <div class="sp-field">
+                <label>座位号</label>
+                <select id="seatColSel"><option value="">-- 选择 --</option></select>
+            </div>
+        </div>
+        <div class="sp-footer">
+            <button class="sp-btn sp-btn-cancel" onclick="document.getElementById('seatPicker').classList.remove('show')">取消</button>
+            <button class="sp-btn sp-btn-confirm" id="seatConfirmBtn">确认前往</button>
+        </div>
+    </div>
+
+    <!-- ========== 视频控制面板（START 打开）========== -->
+    <div class="video-overlay" id="videoOverlay"></div>
+    <div class="video-control-panel" id="videoControlPanel">
+
+        <!-- 进度条 + 时间 -->
+        <div class="vc-section">
+            <div class="vc-progress-wrap">
+                <div class="vc-progress-track" id="vcProgress">
+                    <div class="vc-progress-bg">
+                        <div class="vc-progress-fill" id="vcProgressFill"></div>
+                        <div class="vc-progress-handle" id="vcProgressHandle"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="vc-time-display" id="vcTimeDisplay">0:00 / 0:00</div>
+        </div>
+
+        <!-- 播放控制：播放/暂停/停止/快进快退 -->
+        <div class="vc-section">
+            <div class="vc-label">播放控制</div>
+            <div class="vc-transport">
+                <button class="vc-tbtn" id="vcRewind">
+                    <span class="vc-ico">⏪</span> 30s
+                </button>
+                <button class="vc-tbtn primary" id="vcPlayPause">
+                    <span class="vc-ico">▶</span> 播放
+                </button>
+                <button class="vc-tbtn" id="vcStop">
+                    <span class="vc-ico">⏹</span> 停止
+                </button>
+                <button class="vc-tbtn" id="vcForward">
+                    <span class="vc-ico">⏩</span> 30s
+                </button>
+            </div>
+        </div>
+
+        <!-- 倍速选择 -->
+        <div class="vc-section">
+            <div class="vc-label">播放速度</div>
+            <div class="vc-speed-group">
+                <button class="speed-btn" id="vcSpd0.1">0.1x</button>
+                <button class="speed-btn" id="vcSpd0.5">0.5x</button>
+                <button class="speed-btn active" id="vcSpd1">1.0x</button>
+                <button class="speed-btn" id="vcSpd1.5">1.5x</button>
+                <button class="speed-btn" id="vcSpd2.5">2.5x</button>
+                <button class="speed-btn" id="vcSpd3.5">3.5x</button>
+            </div>
+        </div>
+
+        <!-- 音量控制 -->
+        <div class="vc-section">
+            <div class="vc-label">音量控制</div>
+            <div class="vc-volume-row">
+                <span id="vcVolumeIcon">🔊</span>
+                <input type="range" class="vc-volume-slider" id="vcVolumeSlider"
+                       min="0" max="2" step="0.05" value="1">
+                <span id="vcVolumeValue">100%</span>
+            </div>
+        </div>
+
+        <!-- 画面比例 -->
+        <div class="vc-section">
+            <div class="vc-label">画面比例</div>
+            <div class="vc-aspect-group">
+                <button class="aspect-btn active" id="vcAspFit">
+                    <span class="asp-name">Fit</span>
+                    <span class="asp-desc">适应(带黑边)</span>
+                </button>
+                <button class="aspect-btn" id="vcAspFill">
+                    <span class="asp-name">Fill</span>
+                    <span class="asp-desc">铺满(无黑边)</span>
+                </button>
+                <button class="aspect-btn" id="vcAspCrop">
+                    <span class="asp-name">Crop</span>
+                    <span class="asp-desc">裁切(不变形)</span>
+                </button>
+                <button class="aspect-btn" id="vcAspStretch">
+                    <span class="asp-name">Stretch</span>
+                    <span class="asp-desc">拉伸(会变形)</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 跳过片尾循环设置 -->
+        <div class="vc-section">
+            <div class="vc-label">循环设置</div>
+            <div style="color: rgba(180,180,200,0.6); font-size: 12px; margin-bottom: 10px;">
+                跳过片尾最后 N 秒，自动循环到开头重新播放
+            </div>
+            <div class="vc-skip-row">
+                <span style="color: rgba(200,200,220,0.7); font-size: 13px; white-space: nowrap;">跳过末尾</span>
+                <input type="number" class="vc-skip-input" id="vcSkipInput"
+                       min="0" max="60" value="5" placeholder="秒数">
+                <span style="color: rgba(200,200,220,0.7); font-size: 13px;">秒</span>
+                <button class="vc-skip-save" id="vcSkipSave">保存设置</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 提示 Toast -->
+    <div class="hint-toast" id="hintToast"></div>
+
+    <!-- Three.js 依赖（CDN） -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.162.0/build/three.module.js"
+        }
+    }
+    </script>
+
+    <!-- 主程序入口 -->
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
