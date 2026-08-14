@@ -82,6 +82,9 @@ function init() {
     // 7. 渲染循环
     lastTime = performance.now();
     animate();
+
+    // 标记初始化成功（供看门狗判断）
+    window.__imaxLoaded = true;
 }
 
 // 触摸摇杆绑定
