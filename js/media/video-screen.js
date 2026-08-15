@@ -89,13 +89,14 @@ function handleMediaUpload(e) {
     media.load();
 }
 
-// 视频纹理
+// 视频纹理（性能优化版）
 function THREEVideoTexture(video) {
     const tex = new THREE.VideoTexture(video);
     tex.colorSpace = THREE.SRGBColorSpace;
-    tex.minFilter = THREE.LinearFilter;
+    tex.minFilter = THREE.LinearFilter;      // 不用 Mipmap（省显存+带宽）
     tex.magFilter = THREE.LinearFilter;
-    tex.anisotropy = state.renderer.capabilities.getMaxAnisotropy();
+    tex.anisotropy = 1;                       // 降低各向异性（移动端省GPU）
+    tex.generateMipmaps = false;             // 不生成 Mipmap
     return tex;
 }
 
