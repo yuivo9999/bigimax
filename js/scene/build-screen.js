@@ -67,7 +67,7 @@ function buildMassiveScreenFrame() {
 // 用 CanvasTexture 绘制文字，贴到银幕前方极近的透明平面上
 // 效果：像真实影院的字幕/OSD一样显示在视频/白幕上面
 function buildScreenOSD() {
-    const { width, height } = HALL.screen;
+    const { width, height, curvature } = HALL.screen;
 
     // 高分辨率画布（与银幕比例一致，足够清晰显示文字）
     hudCanvas = document.createElement('canvas');
