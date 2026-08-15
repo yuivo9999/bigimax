@@ -368,6 +368,40 @@ input[type="file"] { display: none; }
     flex-shrink: 0;
 }
 
+/* 灵敏度滑块（菜单内嵌） */
+.menu-slider-item {
+    flex-wrap: wrap;
+    padding-bottom: 16px;
+}
+.menu-slider-item .menu-label {
+    width: 100%;
+    margin-bottom: 6px;
+}
+.sens-slider {
+    width: 100%;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: rgba(255,255,255,0.12);
+    border-radius: 2px;
+    outline: none;
+    margin: 0 8px;
+}
+.sens-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: #e8a030;
+    cursor: pointer;
+    box-shadow: 0 0 6px rgba(232,160,48,0.5);
+}
+.sens-value {
+    font-size: 12px !important;
+    color: #e8a030 !important;
+    min-width: 38px;
+    text-align: right;
+}
+
 /* ========== 视频控制面板（START按钮打开）========== */
 .video-overlay {
     position: fixed; inset: 0;
