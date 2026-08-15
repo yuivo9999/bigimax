@@ -95,9 +95,16 @@ function stopVideo() {
     video.pause();
     video.currentTime = 0;
     playerState.isPlaying = false;
+
+    // v6：停止播放 → 恢复白幕
+    import('../scene/build-screen.js').then(({ showWhiteScreen }) => {
+        showWhiteScreen();
+        if (state.renderer) state.renderer.toneMappingExposure = 1.2; // 恢复默认曝光
+    });
+
     updatePlayButton();
     updateDisplay();
-    showToast('⏹ 已停止');
+    showToast('⏹ 已停止（白幕）');
 }
 
 function seekRelative(delta) {
