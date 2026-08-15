@@ -3,6 +3,7 @@
 import { state } from '../core/state.js';
 import { showToast } from '../main.js';
 import { resetPosition } from '../core/fps-controller.js';
+import { HALL } from '../data/hall-config.js';
 
 export function initSelectMenu() {
     const menu = document.getElementById('selectMenu');
@@ -83,20 +84,20 @@ function handleLightsToggle() {
 function handleSeatSelect() {    const picker = document.getElementById('seatPicker');
     picker.classList.add('show');
 
-    // 填充排数和座位选项
+    // 填充排数和横向座位选项（v9：每排为一条长椅，列表示沿长椅横向位置）
     const rowSel = document.getElementById('seatRowSel');
     const colSel = document.getElementById('seatColSel');
     if (rowSel.options.length <= 1) {
-        for (let r = 1; r <= 18; r++) {
+        for (let r = 1; r <= HALL.seat.rows; r++) {
             const opt = document.createElement('option');
             opt.value = r; opt.textContent = `第 ${r} 排`;
             rowSel.appendChild(opt);
         }
     }
     if (colSel.options.length <= 1) {
-        for (let c = 1; c <= 28; c++) {
+        for (let c = 1; c <= HALL.seat.cols; c++) {
             const opt = document.createElement('option');
-            opt.value = c; opt.textContent = `${c} 号座`;
+            opt.value = c; opt.textContent = `第 ${c} 列`;
             colSel.appendChild(opt);
         }
     }
@@ -108,46 +109,31 @@ function handleResetView() {
     showToast('🧭 视角已复位（正对银幕）');
 }
 
-// 确认选座 → 移动相机到该座位
+// 确认选座 → 移动相机到该排长椅对应位置，正对银幕
 export function confirmSeatSelect() {
     const row = parseInt(document.getElementById('seatRowSel').value);
     const col = parseInt(document.getElementById('seatColSel').value);
     if (!row || !col) return;
 
-    // 计算座位世界坐标（基于 hall-config 数据）
-    import('../data/hall-config.js').then(({ HALL }) => {
-        const { seat } = HALL;
-        const aisleCol = Math.floor(seat.seatsPerRow / 2); // 中央过道位置
+    const s = HALL.seat;
+    const rIdx = row - 1;
 
-        // 座位在过道左边还是右边
-        const actualCol = col >= aisleCol ? col + 1 : col;
-        const halfSeats = seat.seatsPerRow / 2;
+    // Z: 该排中心（阶梯地面）
+    const z = s.frontZ + rIdx * s.run + s.run / 2;
+    // Y: 阶梯高度 + 视点高度
+    const y = rIdx * s.rise + s.eyeHeight;
+    // X: 沿长椅横向位置（第 1 列在左端，最后一列在右端）
+    const x = (col - 1) / (s.cols - 1) * s.benchWidth - s.benchWidth / 2;
 
-        // X: 座位横向位置
-        let x;
-        if (col < aisleCol) {
-            x = -(halfSeats - actualCol) * seat.width - seat.aisleWidth / 2 - seat.width / 2;
-        } else {
-            x = (actualCol - halfSeats) * seat.width + seat.aisleWidth / 2 + seat.width / 2;
-        }
+    if (state.camera) {
+        state.camera.position.set(x, y, z);
+        // 正对银幕中心（银幕在 z = -HALL.depth/2 + HALL.screen.zOffset）
+        const screenZ = -HALL.depth / 2 + HALL.screen.zOffset;
+        state.camera.lookAt(0, HALL.screen.height / 2 + 0.8, screenZ);
+    }
 
-        // Z: 排纵深位置（从后往前）
-        const z = -HALL.depth / 2 + 5 + (row - 1) * seat.rowSpacing;
-
-        // Y: 阶梯高度 + 人眼高度
-        const y = (row - 1) * seat.stepPerRow + 1.6; // 1.6m 眼睛高度
-
-        // 平滑移动相机到座位，并正对银幕中心
-        if (state.camera) {
-            state.camera.position.set(x, y, z);
-            // 正对银幕中心（银幕在 z = -HALL.depth/2 + HALL.screen.zOffset）
-            const screenZ = -HALL.depth / 2 + HALL.screen.zOffset;
-            state.camera.lookAt(0, HALL.screen.height / 2 + 0.8, screenZ);
-        }
-
-        document.getElementById('seatPicker').classList.remove('show');
-        showToast(`🎫 已到达 第${row}排 ${col}号座`);
-    });
+    document.getElementById('seatPicker').classList.remove('show');
+    showToast(`🎫 已到达 第${row}排 第${col}列`);
 }
 
 // 视角灵敏度滑块（不关闭菜单，实时生效）
