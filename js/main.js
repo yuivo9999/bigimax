@@ -112,6 +112,15 @@ async function init() {
         catch (e) { diagError('媒体上传', e); }
         diag('✅ 4/7 控制器就绪', '摇杆·方向键·媒体上传');
 
+        // 视角复位按钮（右侧视角摇杆上方）
+        try {
+            const rb = document.getElementById('resetViewBtn');
+            if (rb) rb.addEventListener('click', () => {
+                resetPosition();
+                showToast('🧭 视角已复位（正对银幕）');
+            });
+        } catch (e) { /* 容忍 */ }
+
         // 4. UI 面板
         try { initSelectMenu(); }
         catch (e) { diagError('SELECT菜单', e); }
