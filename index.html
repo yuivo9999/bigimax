@@ -20,7 +20,14 @@
         <p>华南MALL激光店 · 沉浸式体验</p>
     </div>
 
+    <!-- 右上角红色 IMAX 标识（始终显示，不参与自动隐藏） -->
     <div class="imax-badge" id="imaxBadge">IMAX</div>
+
+    <!-- 顶部 HUD：左上角时钟 + 右上角视频进度（可在功能菜单开关） -->
+    <div class="hud-top" id="hudTop">
+        <div class="hud-clock" id="hudClock">--:--:--</div>
+        <div class="hud-video-time" id="hudVideoTime">0:00 / 0:00</div>
+    </div>
 
     <!-- 3D 画布 -->
     <div id="canvas-container"></div>
@@ -69,6 +76,9 @@
         </button>
     </div>
 
+    <!-- 底部按钮感应区：SELECT/START 隐藏后，仅点击此区域才唤回 -->
+    <div class="bottom-reveal-zone" id="bottomRevealZone"></div>
+
     <!-- 隐藏的媒体上传 input（视频 / 音频通用） -->
     <input type="file" id="videoInput" accept="video/mp4,video/webm,video/ogg,video/mov,video/quicktime,video/*,audio/mp3,audio/wav,audio/ogg,audio/m4a,audio/*">
 
@@ -92,15 +102,15 @@
                 <span class="menu-icon">💡</span>
                 <span class="menu-label">影厅灯光：开</span>
             </div>
-            <div class="menu-item" id="menuSeat">
-                <span class="menu-icon">🎫</span>
-                <span class="menu-label">选择座位视角</span>
-                <span class="menu-status">传送到达</span>
+            <div class="menu-item" id="menuFullscreen">
+                <span class="menu-icon">🔲</span>
+                <span class="menu-label">全屏模式</span>
+                <span class="menu-status">沉浸式</span>
             </div>
-            <div class="menu-item" id="menuReset">
-                <span class="menu-icon">🧭</span>
-                <span class="menu-label">视角复位</span>
-                <span class="menu-status">正对银幕</span>
+            <div class="menu-item" id="menuHud">
+                <span class="menu-icon">🕒</span>
+                <span class="menu-label">顶部信息：开</span>
+                <span class="menu-status">时钟/进度</span>
             </div>
 
             <!-- 视角灵敏度调节 -->
@@ -111,27 +121,6 @@
                        min="0.5" max="4" step="0.1" value="1.2">
                 <span class="sens-value" id="sensValue">0.6x</span>
             </div>
-        </div>
-    </div>
-
-    <!-- ========== 选座弹窗 ========== -->
-    <div class="seat-picker-modal" id="seatPicker">
-        <div class="sp-header">
-            <h3>选择座位</h3>
-        </div>
-        <div class="sp-body">
-            <div class="sp-field">
-                <label>排数</label>
-                <select id="seatRowSel"><option value="">-- 选择 --</option></select>
-            </div>
-            <div class="sp-field">
-                <label>横向列</label>
-                <select id="seatColSel"><option value="">-- 选择 --</option></select>
-            </div>
-        </div>
-        <div class="sp-footer">
-            <button class="sp-btn sp-btn-cancel" onclick="document.getElementById('seatPicker').classList.remove('show')">取消</button>
-            <button class="sp-btn sp-btn-confirm" id="seatConfirmBtn">确认前往</button>
         </div>
     </div>
 
