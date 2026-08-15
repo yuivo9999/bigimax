@@ -13,7 +13,7 @@ import { initMaterials } from './materials/textures.js';
 
 // 场景
 import { buildEnvironment } from './scene/build-environment.js';
-import { buildScreen, createDefaultScreenContent } from './scene/build-screen.js';
+import { buildScreen, createDefaultScreenContent, updateScreenOSD, setScreenOSDVisible } from './scene/build-screen.js';
 import { buildSeats } from './scene/build-seats.js';
 import { setupLighting, setLightsOn } from './scene/lighting.js';
 
@@ -129,10 +129,10 @@ async function init() {
         try { initVideoControls(); }
         catch (e) { diagError('视频控制面板', e); }
 
-        // 同步顶部 HUD 初始可见性
+        // v12：HUD 已改为3D银幕表面渲染，DOM hud-top 不再使用（保留HTML作降级备用）
         try {
-            const hud = document.getElementById('hudTop');
-            if (hud && !hudEnabled) hud.classList.add('hidden');
+            const domHud = document.getElementById('hudTop');
+            if (domHud) domHud.classList.add('hidden');   // 始终隐藏DOM版
         } catch (e) { /* 容忍 */ }
 
         diag('✅ 5/7 UI 面板就绪', 'SELECT菜单 · START控制面板');
@@ -188,13 +188,12 @@ export function showToast(msg) {
 }
 window.showToast = showToast;
 
-// ======== 顶部 HUD：时钟 + 视频进度 ========
+// ======== 顶部 HUD（v12：渲染在3D银幕表面，非DOM overlay）======
 
 export function toggleHud() {
     hudEnabled = !hudEnabled;
     state.ui.hudEnabled = hudEnabled;
-    const hud = document.getElementById('hudTop');
-    if (hud) hud.classList.toggle('hidden', !hudEnabled);
+    setScreenOSDVisible(hudEnabled);
     return hudEnabled;
 }
 
@@ -209,24 +208,25 @@ function formatHudTime(s) {
     return `${m}:${String(sec).padStart(2, '0')}`;
 }
 
-// 时钟每秒刷新（与渲染循环解耦）
+// 缓存当前时钟文字（每秒更新一次，避免每帧格式化）
+let lastClockText = '--:--:--';
+
+// 时钟每秒刷新 → 绘制到3D银幕OSD画布
 setInterval(() => {
     if (!hudEnabled) return;
-    const c = document.getElementById('hudClock');
-    if (c) c.textContent = formatClock(new Date());
+    lastClockText = formatClock(new Date());
 }, 1000);
 
-// 在渲染循环中刷新右上角视频进度
+// 在渲染循环中刷新银幕OSD（合并时钟+视频时间一起绘制）
 function updateHudVideoTime() {
     if (!hudEnabled) return;
     const me = state.refs.mediaElement;
-    const vt = document.getElementById('hudVideoTime');
-    if (!vt) return;
+    let videoText = '0:00 / 0:00';
     if (me) {
-        vt.textContent = `${formatHudTime(me.currentTime || 0)} / ${formatHudTime(me.duration || 0)}`;
-    } else {
-        vt.textContent = '0:00 / 0:00';
+        videoText = `${formatHudTime(me.currentTime || 0)} / ${formatHudTime(me.duration || 0)}`;
     }
+    // v12：绘制到3D银幕表面，而非DOM元素
+    updateScreenOSD(lastClockText, videoText);
 }
 
 // ======== 横屏全屏沉浸模式 ========
