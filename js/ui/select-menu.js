@@ -2,6 +2,7 @@
 // 点击底部 SELECT 按钮 → 屏幕中央弹出竖形功能菜单
 import { state } from '../core/state.js';
 import { showToast } from '../main.js';
+import { resetPosition } from '../core/fps-controller.js';
 
 export function initSelectMenu() {
     const menu = document.getElementById('selectMenu');
@@ -17,6 +18,7 @@ export function initSelectMenu() {
     bindMenuItem('menuAudio', handleAudioToggle);
     bindMenuItem('menuLights', handleLightsToggle);
     bindMenuItem('menuSeat', handleSeatSelect);
+    bindMenuItem('menuReset', handleResetView);
 
     // 绑定灵敏度滑块（不关闭菜单）
     setupSensitivitySlider();
@@ -78,8 +80,7 @@ function handleLightsToggle() {
     showToast(on ? '💡 影厅灯光已打开（顶部聚光灯）' : '🌙 影厅灯光已关闭（观影模式）');
 }
 
-function handleSeatSelect() {
-    const picker = document.getElementById('seatPicker');
+function handleSeatSelect() {    const picker = document.getElementById('seatPicker');
     picker.classList.add('show');
 
     // 填充排数和座位选项
@@ -99,6 +100,12 @@ function handleSeatSelect() {
             colSel.appendChild(opt);
         }
     }
+}
+
+// 视角复位：校正回中间座位、正对银幕的观看视角
+function handleResetView() {
+    resetPosition();
+    showToast('🧭 视角已复位（正对银幕）');
 }
 
 // 确认选座 → 移动相机到该座位
