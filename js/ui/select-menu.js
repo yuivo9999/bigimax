@@ -1,9 +1,7 @@
 // UI：SELECT 功能菜单面板
 // 点击底部 SELECT 按钮 → 屏幕中央弹出竖形功能菜单
 import { state } from '../core/state.js';
-import { showToast } from '../main.js';
-import { resetPosition } from '../core/fps-controller.js';
-import { HALL } from '../data/hall-config.js';
+import { showToast, toggleHud, toggleFullscreen } from '../main.js';
 
 export function initSelectMenu() {
     const menu = document.getElementById('selectMenu');
@@ -18,8 +16,8 @@ export function initSelectMenu() {
     bindMenuItem('menuVideo', handleOpenVideo);
     bindMenuItem('menuAudio', handleAudioToggle);
     bindMenuItem('menuLights', handleLightsToggle);
-    bindMenuItem('menuSeat', handleSeatSelect);
-    bindMenuItem('menuReset', handleResetView);
+    bindMenuItem('menuFullscreen', handleFullscreen);
+    bindMenuItem('menuHud', handleHudToggle);
 
     // 绑定灵敏度滑块（不关闭菜单）
     setupSensitivitySlider();
@@ -81,59 +79,19 @@ function handleLightsToggle() {
     showToast(on ? '💡 影厅灯光已打开（顶部聚光灯）' : '🌙 影厅灯光已关闭（观影模式）');
 }
 
-function handleSeatSelect() {    const picker = document.getElementById('seatPicker');
-    picker.classList.add('show');
-
-    // 填充排数和横向座位选项（v9：每排为一条长椅，列表示沿长椅横向位置）
-    const rowSel = document.getElementById('seatRowSel');
-    const colSel = document.getElementById('seatColSel');
-    if (rowSel.options.length <= 1) {
-        for (let r = 1; r <= HALL.seat.rows; r++) {
-            const opt = document.createElement('option');
-            opt.value = r; opt.textContent = `第 ${r} 排`;
-            rowSel.appendChild(opt);
-        }
-    }
-    if (colSel.options.length <= 1) {
-        for (let c = 1; c <= HALL.seat.cols; c++) {
-            const opt = document.createElement('option');
-            opt.value = c; opt.textContent = `第 ${c} 列`;
-            colSel.appendChild(opt);
-        }
-    }
+// 全屏模式：横屏沉浸式观看（隐藏浏览器/系统状态栏）
+function handleFullscreen() {
+    toggleFullscreen();
+    showToast('⛶ 横屏全屏模式已切换');
 }
 
-// 视角复位：校正回中间座位、正对银幕的观看视角
-function handleResetView() {
-    resetPosition();
-    showToast('🧭 视角已复位（正对银幕）');
-}
-
-// 确认选座 → 移动相机到该排长椅对应位置，正对银幕
-export function confirmSeatSelect() {
-    const row = parseInt(document.getElementById('seatRowSel').value);
-    const col = parseInt(document.getElementById('seatColSel').value);
-    if (!row || !col) return;
-
-    const s = HALL.seat;
-    const rIdx = row - 1;
-
-    // Z: 该排中心（阶梯地面）
-    const z = s.frontZ + rIdx * s.run + s.run / 2;
-    // Y: 阶梯高度 + 视点高度
-    const y = rIdx * s.rise + s.eyeHeight;
-    // X: 沿长椅横向位置（第 1 列在左端，最后一列在右端）
-    const x = (col - 1) / (s.cols - 1) * s.benchWidth - s.benchWidth / 2;
-
-    if (state.camera) {
-        state.camera.position.set(x, y, z);
-        // 正对银幕中心（银幕在 z = -HALL.depth/2 + HALL.screen.zOffset）
-        const screenZ = -HALL.depth / 2 + HALL.screen.zOffset;
-        state.camera.lookAt(0, HALL.screen.height / 2 + 0.8, screenZ);
-    }
-
-    document.getElementById('seatPicker').classList.remove('show');
-    showToast(`🎫 已到达 第${row}排 第${col}列`);
+// 顶部信息显示开关（时钟 + 视频进度）
+function handleHudToggle() {
+    const on = toggleHud();
+    const btn = document.getElementById('menuHud');
+    btn.querySelector('.menu-icon').textContent = on ? '🕒' : '🕓';
+    btn.querySelector('.menu-label').textContent = on ? '顶部信息：开' : '顶部信息：关';
+    showToast(on ? '🕒 顶部信息已开启（时钟/进度）' : '🕓 顶部信息已关闭');
 }
 
 // 视角灵敏度滑块（不关闭菜单，实时生效）
