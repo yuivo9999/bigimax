@@ -17,6 +17,9 @@ export function initSelectMenu() {
     bindMenuItem('menuAudio', handleAudioToggle);
     bindMenuItem('menuLights', handleLightsToggle);
     bindMenuItem('menuSeat', handleSeatSelect);
+
+    // 绑定灵敏度滑块（不关闭菜单）
+    setupSensitivitySlider();
 }
 
 function toggleMenu(show) {
@@ -67,29 +70,12 @@ function handleLightsToggle() {
     icon.textContent = on ? '💡' : '🌙';
     btn.querySelector('.menu-label').textContent = on ? '影厅灯光：开' : '影厅灯光：关';
 
-    // 调整场景所有灯光强度
-    if (state.scene) {
-        state.scene.traverse(obj => {
-            if (obj.isAmbientLight) {
-                obj.intensity = on ? 0.6 : 0.18;
-            } else if (obj.isPointLight) {
-                if (!obj.userData.baseIntensity) obj.userData.baseIntensity = obj.intensity;
-                obj.intensity = on ? obj.userData.baseIntensity * 4 : obj.userData.baseIntensity;
-            } else if (obj.isDirectionalLight) {
-                if (!obj.userData.baseIntensity) obj.userData.baseIntensity = obj.intensity;
-                obj.intensity = on ? obj.userData.baseIntensity * 5 : obj.userData.baseIntensity;
-            } else if (obj.isHemisphereLight) {
-                obj.intensity = on ? 0.5 : 0.12;
-            }
-        });
-    }
+    // 调用灯光模块的切换函数（顶部聚光灯 / 暗场）
+    import('../scene/lighting.js').then(({ setLightsOn }) => {
+        setLightsOn(on);
+    });
 
-    // 调整曝光
-    if (state.renderer) {
-        state.renderer.toneMappingExposure = on ? 1.8 : 1.0;
-    }
-
-    showToast(on ? '💡 影厅灯光已打开' : '🌙 影厅灯光已关闭（观影模式）');
+    showToast(on ? '💡 影厅灯光已打开（顶部聚光灯）' : '🌙 影厅灯光已关闭（观影模式）');
 }
 
 function handleSeatSelect() {
@@ -153,6 +139,30 @@ export function confirmSeatSelect() {
         document.getElementById('seatPicker').classList.remove('show');
         showToast(`🎫 已到达 第${row}排 ${col}号座`);
     });
+}
+
+// 视角灵敏度滑块（不关闭菜单，实时生效）
+function setupSensitivitySlider() {
+    const slider = document.getElementById('sensSlider');
+    const valEl = document.getElementById('sensValue');
+    if (!slider || !valEl) return;
+
+    // 滑块值映射：UI显示倍速(0.5x~4x) → 实际灵敏度(0.001~0.008)
+    // 默认值 2 → 对应灵敏度 0.002（减半后的默认值）
+    const baseSens = 0.001;
+
+    slider.addEventListener('input', () => {
+        const mult = parseFloat(slider.value);       // 0.5 ~ 4
+        const sens = baseSens * mult;                // 0.0005 ~ 0.008
+        valEl.textContent = mult.toFixed(1) + 'x';
+
+        import('../core/fps-controller.js').then(({ setLookSensitivity }) => {
+            setLookSensitivity(sens);
+        });
+    });
+
+    // 初始化显示
+    valEl.textContent = parseFloat(slider.value).toFixed(1) + 'x';
 }
 
 export { toggleMenu };
