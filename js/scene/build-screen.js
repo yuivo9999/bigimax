@@ -19,7 +19,7 @@ export function buildScreen() {
         geo,
         new THREE.MeshBasicMaterial({ color: 0x04040c, side: THREE.DoubleSide })
     );
-    mesh.position.set(0, height / 2 + 1.2, -HALL.depth / 2 + 3);
+    mesh.position.set(0, height / 2 + 0.8, -HALL.depth / 2 + HALL.screen.zOffset);
     state.scene.add(mesh);
 
     // 存入共享状态（视频模块会替换其材质贴图）
@@ -34,7 +34,9 @@ function buildMassiveScreenFrame() {
     const fm = state.materials.metalDark.clone();
     fm.color.setHex(0x0c0c12);
     const t = 0.35, d = 0.4;
-    const sw = HALL.screen.width, sh = HALL.screen.height, bY = sh / 2 + 1.2, z = -HALL.depth / 2 + 3;
+    const sw = HALL.screen.width, sh = HALL.screen.height;
+    const bY = sh / 2 + 0.8;
+    const z = -HALL.depth / 2 + HALL.screen.zOffset;
 
     const frames = [
         [sw + t * 2, t, 0, bY + sh / 2 + t / 2],
