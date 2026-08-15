@@ -6,11 +6,11 @@ import { HALL } from '../data/hall-config.js';
 import { inputState } from '../controls/input-state.js';
 
 const fps = {
-    position: new THREE.Vector3(-9, 1.65, 14), // 眼睛高度约 1.65m
-    yaw: 0.12,        // 水平角度
-    pitch: 0.08,      // 垂直角度（微微仰视）
+    position: new THREE.Vector3(-10, 1.6, 12), // 更靠近银幕，左侧阶梯入口
+    yaw: 0.15,        // 水平角度（微微偏右看向银幕中心）
+    pitch: 0.12,      // 垂直角度（微微仰视，感受银幕高度）
     moveSpeed: 3.5,    // 走动速度 (m/s)
-    lookSensitivity: 0.004,
+    lookSensitivity: 0.002,  // 视角灵敏度（原0.004减半，更平滑）
     keyboard: {}      // 键盘状态（桌面调试用）
 };
 
@@ -21,18 +21,27 @@ export function initFPS() {
     return fps;
 }
 
+// 外部可调用：设置视角灵敏度（供 SELECT 菜单滑块使用）
+export function setLookSensitivity(value) {
+    fps.lookSensitivity = Math.max(0.0005, Math.min(0.01, value));
+}
+
+export function getLookSensitivity() {
+    return fps.lookSensitivity;
+}
+
 export function updateFPS(dt) {
     // 键盘输入叠加
     let kx = 0, kz = 0;
-    if (fps.keyboard['KeyW'] || fps.keyboard['ArrowUp']) kz -= 1;
-    if (fps.keyboard['KeyS'] || fps.keyboard['ArrowDown']) kz += 1;
-    if (fps.keyboard['KeyA'] || fps.keyboard['ArrowLeft']) kx -= 1;
-    if (fps.keyboard['KeyD'] || fps.keyboard['ArrowRight']) kx += 1;
+    if (fps.keyboard['KeyW'] || fps.keyboard['ArrowUp']) kz += 1;   // W/↑ 前进
+    if (fps.keyboard['KeyS'] || fps.keyboard['ArrowDown']) kz -= 1;   // S/↓ 后退
+    if (fps.keyboard['KeyA'] || fps.keyboard['ArrowLeft']) kx -= 1;  // A/← 左移
+    if (fps.keyboard['KeyD'] || fps.keyboard['ArrowRight']) kx += 1;  // D/→ 右移
 
     const totalMX = Math.max(-1, Math.min(1, inputState.moveX + kx));
     const totalMZ = Math.max(-1, Math.min(1, inputState.moveZ + kz));
 
-    // 视角旋转
+    // 视角旋转（灵敏度已减半）
     fps.yaw += inputState.lookX * fps.lookSensitivity * 60;
     fps.pitch -= inputState.lookY * fps.lookSensitivity * 60;
     fps.pitch = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, fps.pitch));
@@ -40,7 +49,8 @@ export function updateFPS(dt) {
     const sinYaw = Math.sin(fps.yaw);
     const cosYaw = Math.cos(fps.yaw);
 
-    // 前进 / 后退（相对视角）
+    // 前进 / 后退（相对视角方向）
+    // totalMZ > 0 → 向银幕前进（-Z 方向在屏幕空间是"前方"）
     const forward = new THREE.Vector3(-sinYaw, 0, -cosYaw)
         .multiplyScalar(totalMZ * fps.moveSpeed * dt);
     // 左右平移
@@ -77,7 +87,7 @@ export function updateFPS(dt) {
 }
 
 export function resetPosition() {
-    fps.position.set(-9, 1.65, 14);
-    fps.yaw = 0.12;
-    fps.pitch = 0.08;
+    fps.position.set(-10, 1.6, 12);
+    fps.yaw = 0.15;
+    fps.pitch = 0.12;
 }

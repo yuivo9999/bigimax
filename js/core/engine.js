@@ -11,23 +11,27 @@ export function initEngine(containerSelector) {
     state.scene.background = new THREE.Color(0x010106);
     state.scene.fog = new THREE.FogExp2(0x010108, 0.01);
 
-    // ===== 相机（第一人称）=====
+    // ===== 相机（第一人称，增强银幕震撼感）=====
     state.camera = new THREE.PerspectiveCamera(
-        65, // 广角增强沉浸感
+        72, // 广角（从65增至72）增强沉浸感和银幕压迫感
         window.innerWidth / window.innerHeight,
         0.1,
         600
     );
-    state.camera.position.set(-9, 1.65, 14); // 默认站在左侧入口阶梯
+    state.camera.position.set(-10, 1.6, 12); // 更靠近银幕（从z=14改为12），左侧阶梯入口
 
-    // ===== 渲染器 =====
+    // ===== 渲染器（移动端性能优化）=====
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const maxPixelRatio = isMobile ? 1.5 : 2;   // 移动端限制最高1.5x
+
     state.renderer = new THREE.WebGLRenderer({
-        antialias: true,
-        powerPreference: 'high-performance'
+        antialias: !isMobile,                    // 移动端关闭抗锯齿（省大量GPU）
+        powerPreference: 'high-performance',
+        stencil: false                           // 不需要模板缓冲
     });
     state.renderer.setSize(window.innerWidth, window.innerHeight);
-    state.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    state.renderer.shadowMap.enabled = true;
+    state.renderer.setPixelRatio(Math.min(window.devicePixelRatio, maxPixelRatio));
+    state.renderer.shadowMap.enabled = false;     // 默认关闭阴影（视频播放更流畅）
     state.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     state.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     state.renderer.toneMappingExposure = 0.7;
