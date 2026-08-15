@@ -15,8 +15,7 @@ import { initMaterials } from './materials/textures.js';
 import { buildEnvironment } from './scene/build-environment.js';
 import { buildScreen, createDefaultScreenContent } from './scene/build-screen.js';
 import { buildSeats } from './scene/build-seats.js';
-import { buildStairs } from './scene/build-stairs.js';
-import { setupLighting } from './scene/lighting.js';
+import { setupLighting, setLightsOn } from './scene/lighting.js';
 
 // 控制
 import { setupJoystick } from './controls/touch-joystick.js';
@@ -88,11 +87,11 @@ async function init() {
         catch (e) { diagError('银幕构建', e); }
         try { buildSeats(); }
         catch (e) { diagError('座椅构建', e); }
-        // 楼梯已移除（v5：只保留座椅区，去掉偏位的侧面阶梯）
-        // try { buildStairs(); }
-        // catch (e) { diagError('阶梯构建', e); }
         try { setupLighting(); }
         catch (e) { diagError('灯光设置', e); }
+        // v9：默认开灯模式（明亮影厅）
+        try { setLightsOn(true); state.ui.lightsOn = true; }
+        catch (e) { /* 容忍 */ }
         diag('✅ 3/7 场景构建完成', '环境·银幕·座椅·灯光');
 
         try { createDefaultScreenContent(); }
