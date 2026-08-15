@@ -1,16 +1,18 @@
-// 核心：第一人称走动控制器
+// 核心：第一人称游动控制器
 // 消费 inputState，更新相机位置与朝向，并做边界/高度约束
+// v5：移除楼梯后改为纯座椅区游动，高度跟随座椅阶梯
 import * as THREE from 'three';
 import { state } from './state.js';
 import { HALL } from '../data/hall-config.js';
 import { inputState } from '../controls/input-state.js';
 
 const fps = {
-    position: new THREE.Vector3(-10, 1.6, 12), // 更靠近银幕，左侧阶梯入口
-    yaw: 0.15,        // 水平角度（微微偏右看向银幕中心）
-    pitch: 0.12,      // 垂直角度（微微仰视，感受银幕高度）
-    moveSpeed: 3.5,    // 走动速度 (m/s)
-    lookSensitivity: 0.002,  // 视角灵敏度（原0.004减半，更平滑）
+    // v5：默认从中间座位（约第9排）开始，正对银幕
+    position: new THREE.Vector3(0, 3.4, 11.6),   // 中间排座位高度与位置
+    yaw: 0,            // 正对银幕中心（水平无偏移）
+    pitch: 0.10,       // 微微仰视感受银幕高度
+    moveSpeed: 3.5,    // 游动速度 (m/s)
+    lookSensitivity: 0.002,  // 视角灵敏度
     keyboard: {}      // 键盘状态（桌面调试用）
 };
 
@@ -64,15 +66,9 @@ export function updateFPS(dt) {
     newPos.x = Math.max(-HALL.width / 2 + margin, Math.min(HALL.width / 2 - margin, newPos.x));
     newPos.z = Math.max(-HALL.depth / 2 + margin, Math.min(HALL.depth / 2 + 4, newPos.z));
 
-    // 高度跟随地面（座椅区随阶梯抬升，侧面通道匹配阶梯）
-    const inSideChannel = Math.abs(newPos.x) > HALL.width / 2 - 4;
-    if (inSideChannel) {
-        const stairStep = Math.max(0, (newPos.z + 2) / HALL.stair.stepDepth);
-        newPos.y = stairStep * HALL.stair.stepHeight + 1.65;
-    } else {
-        const rowFromZ = Math.max(0, (newPos.z - 3) / HALL.seat.rowSpacing);
-        newPos.y = rowFromZ * HALL.seat.stepPerRow + 1.65;
-    }
+    // 高度跟随座椅区阶梯（v5：移除楼梯后，全厅高度统一按座椅排计算）
+    const rowFromZ = Math.max(0, (newPos.z - 3) / HALL.seat.rowSpacing);
+    newPos.y = rowFromZ * HALL.seat.stepPerRow + 1.65;
 
     fps.position.copy(newPos);
 
@@ -87,7 +83,8 @@ export function updateFPS(dt) {
 }
 
 export function resetPosition() {
-    fps.position.set(-10, 1.6, 12);
-    fps.yaw = 0.15;
-    fps.pitch = 0.12;
+    // 重置到中间座位，正对银幕
+    fps.position.set(0, 3.4, 11.6);
+    fps.yaw = 0;
+    fps.pitch = 0.10;
 }
