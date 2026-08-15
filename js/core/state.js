@@ -17,6 +17,6 @@ export const state = {
     },
     ui: {
         spatialAudio: false, // 立体空间音效开关
-        lightsOn: false      // 影厅灯光开关
+        lightsOn: true       // v9：默认开灯模式（明亮影厅）
     }
 };

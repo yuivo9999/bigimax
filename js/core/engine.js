@@ -9,7 +9,7 @@ export function initEngine(containerSelector) {
     // ===== 场景 =====
     state.scene = new THREE.Scene();
     state.scene.background = new THREE.Color(0x010106);
-    state.scene.fog = new THREE.FogExp2(0x010108, 0.01);
+    state.scene.fog = new THREE.FogExp2(0x010108, 0.006);  // v9：降低雾浓度，适配超大空间
 
     // ===== 相机（第一人称，增强银幕震撼感）=====
     state.camera = new THREE.PerspectiveCamera(
@@ -18,7 +18,7 @@ export function initEngine(containerSelector) {
         0.1,
         600
     );
-    state.camera.position.set(0, 3.4, 11.6); // v5：中间座位默认视角，正对银幕
+    state.camera.position.set(0, 19.2, -1.3); // v9：看台中间排默认视角，正对银幕
 
     // ===== 渲染器（v5：恢复大部分画质设置，仅阴影保持关闭以节省性能）=====
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);

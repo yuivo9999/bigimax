@@ -6,13 +6,23 @@ import { state } from './state.js';
 import { HALL } from '../data/hall-config.js';
 import { inputState } from '../controls/input-state.js';
 
+// 计算默认视点：看台中间排，正对银幕
+function defaultView() {
+    const s = HALL.seat;
+    const midRow = Math.floor(s.rows / 2);
+    const z = s.frontZ + midRow * s.run + s.run / 2;
+    const y = midRow * s.rise + s.eyeHeight;
+    return { x: 0, y, z };
+}
+const _dv = defaultView();
+
 const fps = {
-    // v5：默认从中间座位（约第9排）开始，正对银幕
-    position: new THREE.Vector3(0, 3.4, 11.6),   // 中间排座位高度与位置
+    // v9：默认从看台中间排开始，正对银幕（高度跟随 45° 阶梯地面）
+    position: new THREE.Vector3(_dv.x, _dv.y, _dv.z),
     yaw: 0,            // 正对银幕中心（水平无偏移）
-    pitch: 0.10,       // 微微仰视感受银幕高度
+    pitch: 0.08,       // 微微仰视感受银幕高度
     moveSpeed: 3.5,    // 游动速度 (m/s)
-    lookSensitivity: 0.0024,  // v6：默认灵敏度 1.2x（原0.002 × 1.2）
+    lookSensitivity: 0.0012,  // v9：默认灵敏度 0.6x（再减半）
     keyboard: {}      // 键盘状态（桌面调试用）
 };
 
@@ -30,6 +40,21 @@ export function setLookSensitivity(value) {
 
 export function getLookSensitivity() {
     return fps.lookSensitivity;
+}
+
+// 给定 z 返回地面高度（连续斜坡，无落差）
+//  - z < frontZ：第一排前方（银幕前空地）→ 平地 0
+//  - frontZ ≤ z ≤ 最后一级台阶末：45° 阶梯斜坡
+//  - z > 末级台阶：入口平台（与最后排等高，避免落差穿模）
+function floorHeightAt(z) {
+    const s = HALL.seat;
+    const lastTreadEnd = s.frontZ + s.rows * s.run;
+    const topH = (s.rows - 1) * s.rise;
+    if (z < s.frontZ) return 0;
+    if (z <= lastTreadEnd) {
+        return Math.min((z - s.frontZ) / s.run * s.rise, topH);
+    }
+    return topH;
 }
 
 export function updateFPS(dt) {
@@ -66,9 +91,9 @@ export function updateFPS(dt) {
     newPos.x = Math.max(-HALL.width / 2 + margin, Math.min(HALL.width / 2 - margin, newPos.x));
     newPos.z = Math.max(-HALL.depth / 2 + margin, Math.min(HALL.depth / 2 + 4, newPos.z));
 
-    // 高度跟随座椅区阶梯（v5：移除楼梯后，全厅高度统一按座椅排计算）
-    const rowFromZ = Math.max(0, (newPos.z - 3) / HALL.seat.rowSpacing);
-    newPos.y = rowFromZ * HALL.seat.stepPerRow + 1.65;
+    // 高度跟随 45° 阶梯地面（v9）：始终在地面之上，不允许穿模到地面下方
+    const groundY = floorHeightAt(newPos.z);
+    newPos.y = groundY + HALL.seat.eyeHeight;
 
     fps.position.copy(newPos);
 
@@ -83,10 +108,11 @@ export function updateFPS(dt) {
 }
 
 export function resetPosition() {
-    // 重置到中间座位，正对银幕
-    fps.position.set(0, 3.4, 11.6);
+    // 重置到看台中间排，正对银幕
+    const dv = defaultView();
+    fps.position.set(dv.x, dv.y, dv.z);
     fps.yaw = 0;
-    fps.pitch = 0.10;
+    fps.pitch = 0.08;
 
     // 立即应用到相机，确保复位即时生效（无需等待下一帧 updateFPS）
     if (state.camera) {
