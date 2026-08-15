@@ -42,8 +42,9 @@
                 </div>
             </div>
 
-            <!-- 右侧：视角摇杆 -->
+            <!-- 右侧：视角复位键 + 视角摇杆 -->
             <div class="right-controls">
+                <button class="reset-view-btn" id="resetViewBtn">🧭 视角复位</button>
                 <div class="look-joystick-base" id="lookJoystickBase">
                     <div class="look-joystick-stick" id="lookStick"></div>
                 </div>
@@ -95,6 +96,11 @@
                 <span class="menu-icon">🎫</span>
                 <span class="menu-label">选择座位视角</span>
                 <span class="menu-status">传送到达</span>
+            </div>
+            <div class="menu-item" id="menuReset">
+                <span class="menu-icon">🧭</span>
+                <span class="menu-label">视角复位</span>
+                <span class="menu-status">正对银幕</span>
             </div>
 
             <!-- 视角灵敏度调节 -->
