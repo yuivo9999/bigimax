@@ -1,8 +1,11 @@
-// 场景构建：IMAX GT 巨型银幕（曲面 + 边框 + 白幕默认画面）
-// v6：默认显示白幕（参考图4），停止播放时也恢复白幕
+// 场景构建：IMAX GT 巨型银幕（曲面 + 边框 + 白幕默认画面 + 银幕OSD）
+// v6：默认显示白幕；v12：HUD（时钟+视频进度）从DOM层移到3D银幕表面
 import * as THREE from 'three';
 import { state } from '../core/state.js';
 import { HALL } from '../data/hall-config.js';
+
+// ====== 银幕 OSD：在3D银幕表面显示时钟与视频进度（替代DOM overlay）======
+let hudCanvas, hudCtx, hudTexture, hudMesh;
 
 export function buildScreen() {
     const { width, height, curvature } = HALL.screen;
@@ -34,6 +37,7 @@ export function buildScreen() {
     state.refs.screenMesh = mesh;
 
     buildMassiveScreenFrame();
+    buildScreenOSD();          // v12：银幕表面 OSD（时钟+视频时间）
 }
 
 // 厚重金属边框
@@ -57,6 +61,134 @@ function buildMassiveScreenFrame() {
         m.castShadow = true;
         state.scene.add(m);
     });
+}
+
+// ====== v12：银幕 OSD 叠加层（时钟 + 视频进度，渲染在3D银幕表面）======
+// 用 CanvasTexture 绘制文字，贴到银幕前方极近的透明平面上
+// 效果：像真实影院的字幕/OSD一样显示在视频/白幕上面
+function buildScreenOSD() {
+    const { width, height } = HALL.screen;
+
+    // 高分辨率画布（与银幕比例一致，足够清晰显示文字）
+    hudCanvas = document.createElement('canvas');
+    hudCanvas.width = 2048;
+    hudCanvas.height = Math.round(2048 * (height / width)); // 保持银幕宽高比
+    hudCtx = hudCanvas.getContext('2d');
+
+    hudTexture = new THREE.CanvasTexture(hudCanvas);
+    hudTexture.colorSpace = THREE.SRGBColorSpace;
+    hudTexture.minFilter = THREE.LinearFilter;
+    hudTexture.magFilter = THREE.LinearFilter;
+
+    // 与银幕同样曲面的平面，位于银幕前方 0.03m（紧贴银幕表面）
+    const osdGeo = new THREE.PlaneGeometry(width * 0.96, height * 0.96, 64, 48);
+    const osdPos = osdGeo.attributes.position;
+    for (let i = 0; i < osdPos.count; i++) {
+        const x = osdPos.getX(i);
+        osdPos.setZ(i, Math.sin(x / width * Math.PI * 0.13) * curvature * width);
+    }
+    osdGeo.computeVertexNormals();
+
+    hudMesh = new THREE.Mesh(
+        osdGeo,
+        new THREE.MeshBasicMaterial({
+            map: hudTexture,
+            transparent: true,
+            opacity: 1.0,
+            side: THREE.DoubleSide,
+            depthWrite: false,       // 不写入深度缓冲，避免遮挡后面的视频
+            toneMapped: false         // 不受色调映射影响，保持文字原始亮度
+        })
+    );
+
+    // 位置：与银幕完全对齐，仅 z 轴前移 0.03m
+    const screenPos = state.refs.screenMesh.position;
+    hudMesh.position.set(screenPos.x, screenPos.y, screenPos.z + 0.03);
+
+    // 默认隐藏（由功能菜单开关控制）
+    hudMesh.visible = state.ui.hudEnabled;
+
+    state.scene.add(hudMesh);
+    state.refs.screenOSD = hudMesh;   // 存入共享状态供外部控制显隐
+
+    // 初始绘制一帧（避免空白闪烁）
+    drawOSD('--:--:--', '0:00 / 0:00');
+}
+
+// 绘制 OSD 内容到 Canvas（左上角时钟 + 右上角视频时间）
+function drawOSD(clockText, videoTimeText) {
+    if (!hudCtx) return;
+    const w = hudCanvas.width;
+    const h = hudCanvas.height;
+
+    // 清空画布（完全透明）
+    hudCtx.clearRect(0, 0, w, h);
+
+    const padding = Math.round(w * 0.025);     // 边距（约 2.5%）
+    const fontSize = Math.round(h * 0.036);     // 字号（约屏幕高度 3.6%）
+
+    hudCtx.font = `600 ${fontSize}px -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif`;
+    hudCtx.textBaseline = 'top';
+    hudCtx.letterSpacing = '1px';
+
+    // 左上角：当前时间（白色带半透明黑底）
+    drawOSDLabel(clockText, padding, padding, 'left');
+
+    // 右上角：视频已播/总时长（金色带半透明黑底）
+    drawOSDLabel(videoTimeText, w - padding, padding, 'right');
+
+    // 标记纹理需要更新
+    if (hudTexture) hudTexture.needsUpdate = true;
+}
+
+// 绘制单个 OSD 标签（带圆角半透明背景）
+function drawOSDLabel(text, x, y, align) {
+    const fontSize = parseInt(hudCtx.font) || 48;
+    const metrics = hudCtx.measureText(text);
+    const textW = metrics.width;
+    const textH = fontSize;
+    const padX = Math.round(fontSize * 0.5);
+    const padY = Math.round(fontSize * 0.25);
+    const radius = Math.round(fontSize * 0.2);
+
+    const labelX = align === 'right' ? x - textW - padX * 2 : x;
+    const labelY = y;
+    const labelW = textW + padX * 2;
+    const labelH = textH + padY * 2;
+
+    // 圆角矩形背景
+    hudCtx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+    roundRect(hudCtx, labelX, labelY, labelW, labelH, radius);
+    hudCtx.fill();
+
+    // 文字
+    hudCtx.fillStyle = align === 'right' ? 'rgba(255,210,150,0.95)' : 'rgba(220,225,255,0.95)';
+    hudCtx.fillText(text, labelX + padX, labelY + padY);
+}
+
+// 通用圆角矩形辅助函数
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+}
+
+// ★ 外部接口：更新 OSD 内容（每帧从渲染循环调用）
+export function updateScreenOSD(clockText, videoTimeText) {
+    drawOSD(clockText, videoTimeText);
+}
+
+// ★ 外部接口：切换 OSD 显隐（功能菜单开关调用）
+export function setScreenOSDVisible(visible) {
+    if (hudMesh) hudMesh.visible = visible;
 }
 
 // 银幕柔光晕
