@@ -59,6 +59,46 @@ html, body {
 }
 .imax-badge.hidden { opacity: 0; pointer-events: none; }
 
+/* ========== 顶部 HUD（时钟 + 视频进度，功能菜单可开关）========== */
+.hud-top {
+    position: fixed;
+    top: env(safe-area-inset-top, 10px);
+    left: 0; right: 0;
+    z-index: 210;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 0 14px;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+    font-variant-numeric: tabular-nums;
+}
+.hud-top.hidden { opacity: 0; pointer-events: none; }
+.hud-clock {
+    color: rgba(220,225,255,0.88);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.7);
+    background: rgba(0,0,0,0.32);
+    padding: 4px 10px;
+    border-radius: 8px;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+.hud-video-time {
+    color: rgba(255,210,150,0.92);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.7);
+    background: rgba(0,0,0,0.32);
+    padding: 4px 10px;
+    border-radius: 8px;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
 /* ========== 底部常驻按钮（SELECT + START）========== */
 .bottom-buttons {
     position: fixed;
@@ -68,7 +108,28 @@ html, body {
     display: flex;
     gap: 28px;
     z-index: 300;
-    /* 不参与自动隐藏，始终显示 */
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.bottom-buttons.hidden {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+    pointer-events: none;
+}
+
+/* 底部按钮感应区：按钮隐藏后，点击其所在位置才唤回（仅 .active 时接收点击） */
+.bottom-reveal-zone {
+    position: fixed;
+    bottom: env(safe-area-inset-bottom, 16px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 210px;
+    height: 96px;
+    z-index: 290;            /* 位于底部按钮(300)之下，按钮可见时由按钮接收点击 */
+    pointer-events: none;    /* 默认关闭；仅当按钮隐藏、本区域 .active 时才开启 */
+    background: transparent;
+}
+.bottom-reveal-zone.active {
+    pointer-events: auto;    /* 按钮隐藏后开启：点击此区域唤回 SELECT/START */
 }
 
 .bottom-btn {
