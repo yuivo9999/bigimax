@@ -116,7 +116,7 @@ function buildScreenOSD() {
 }
 
 // 绘制 OSD 内容到 Canvas（左上角时钟 + 右上角视频时间）
-// v15：参考真实影院 OSD —— 小号白字、无背景填充、仅细线边框（右侧）、文字阴影保证白幕可读
+// v16：对称布局 —— 左侧大号白字时钟贴角，右侧金色文字无背景，同高同距
 function drawOSD(clockText, videoTimeText) {
     if (!hudCtx) return;
     const w = hudCanvas.width;
@@ -125,87 +125,40 @@ function drawOSD(clockText, videoTimeText) {
     // 清空画布（完全透明）
     hudCtx.clearRect(0, 0, w, h);
 
-    const padding = Math.round(w * 0.02);      // 边距（约 2%）
-    const fontSize = Math.round(h * 0.014);     // 字号（约屏幕高度 1.4% —— 小巧不挡画面）
+    const padding = Math.round(w * 0.015);       // 统一边距（左右对称）
+    const fontSize = Math.round(h * 0.028);     // 统一字号：左右一致（屏幕高度 2.8%）
 
+    // ===== 左上角：当前时间（白字，紧贴左上角）=====
     hudCtx.font = `500 ${fontSize}px -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif`;
     hudCtx.textBaseline = 'top';
 
-    // 左上角：当前时间（纯白字 + 细阴影，无背景）
-    drawOSDClock(clockText, padding, padding);
-
-    // 右上角：视频时间（细线圆角描边框 + 白字，无填充）
-    drawOSDVideoTime(videoTimeText, w - padding, padding);
-
-    // 标记纹理需要更新
-    if (hudTexture) hudTexture.needsUpdate = true;
-}
-
-// 左上角时钟：纯白色文字 + 轻微投影（在白幕上仍可辨认）
-function drawOSDClock(text, x, y) {
-    const fontSize = parseInt(hudCtx.font) || 28;
-
-    // 文字阴影（半透明深色，保证白底可读）
-    hudCtx.shadowColor = 'rgba(0, 0, 0, 0.55)';
-    hudCtx.shadowBlur = Math.round(fontSize * 0.5);
-    hudCtx.shadowOffsetX = 0;
-    hudCtx.shadowOffsetY = 0;
-
-    // 纯白文字
+    hudCtx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+    hudCtx.shadowBlur = Math.round(fontSize * 0.45);
     hudCtx.fillStyle = '#ffffff';
-    hudCtx.fillText(text, x, y);
-
-    // 重置阴影（避免影响后续绘制）
-    hudCtx.shadowColor = 'transparent';
-    hudCtx.shadowBlur = 0;
-}
-
-// 右上角视频时间：细线圆角描边框（不填充）+ 白字
-function drawOSDVideoTime(text, x, y) {
-    const fontSize = parseInt(hudCtx.font) || 28;
-    const metrics = hudCtx.measureText(text);
-    const textW = metrics.width;
-    const textH = fontSize;
-    const padX = Math.round(fontSize * 0.55);
-    const padY = Math.round(fontSize * 0.3);
-    const radius = Math.round(fontSize * 0.35);
-    const strokeWidth = Math.max(1, Math.round(fontSize * 0.06));
-
-    const labelX = x - textW - padX * 2;
-    const labelY = y;
-    const labelW = textW + padX * 2;
-    const labelH = textH + padY * 2;
-
-    // 仅细线描边圆角矩形（不填充背景）
-    hudCtx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-    hudCtx.lineWidth = strokeWidth;
-    roundRect(hudCtx, labelX, labelY, labelW, labelH, radius);
-    hudCtx.stroke();
-
-    // 白色文字 + 轻微阴影
-    hudCtx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-    hudCtx.shadowBlur = Math.round(fontSize * 0.4);
-    hudCtx.fillStyle = '#ffffff';
-    hudCtx.fillText(text, labelX + padX, labelY + padY);
+    hudCtx.fillText(clockText, padding, padding);
 
     // 重置阴影
     hudCtx.shadowColor = 'transparent';
     hudCtx.shadowBlur = 0;
-}
 
-// 通用圆角矩形辅助函数
-function roundRect(ctx, x, y, w, h, r) {
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.lineTo(x + w - r, y);
-    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-    ctx.lineTo(x + w, y + h - r);
-    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-    ctx.lineTo(x + r, y + h);
-    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-    ctx.lineTo(x, y + r);
-    ctx.quadraticCurveTo(x, y, x + r, y);
-    ctx.closePath();
+    // ===== 右上角：视频时间（金色主色+白色辅色，无背景，与左侧同字号同 y）=====
+    hudCtx.textBaseline = 'top';
+
+    const metrics = hudCtx.measureText(videoTimeText);
+    const rightX = w - padding - metrics.width;   // 右对齐，距右边缘 = padding
+
+    // 金色主色调文字 + 阴影
+    hudCtx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+    hudCtx.shadowBlur = Math.round(fontSize * 0.4);
+    hudCtx.fillStyle = '#e8c872';                 // 暖金色主色
+    hudCtx.fillText(videoTimeText, rightX, padding);
+
+    // 重置阴影
+    hudCtx.shadowColor = 'transparent';
+    hudCtx.shadowBlur = 0;
+
+    // 标记纹理需要更新
+    if (hudTexture) hudTexture.needsUpdate = true;
 }
 
 // ★ 外部接口：更新 OSD 内容（每帧从渲染循环调用）
