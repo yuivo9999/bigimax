@@ -1,13 +1,14 @@
 // 控制：十字方向键（D-Pad）移动
-// 多个按键同时按下时累加，松开时扣除，支持斜向移动
+// 已修正方向映射：▲前进(向银幕) ▼后退 ◀左移 ▶右移
 import { inputState } from './input-state.js';
 import { resetHideTimer } from './ui-autohide.js';
 
+// 方向映射（已修正：屏幕上方=向银幕方向）
 const DIR_MAP = {
-    forward:  { x: 0, z: -1 },
-    backward: { x: 0, z: 1 },
-    left:     { x: -1, z: 0 },
-    right:    { x: 1, z: 0 }
+    forward:  { x: 0, z: 1 },   // ▲ 向银幕前进（+z方向在FPS中对应朝前）
+    backward: { x: 0, z: -1 },  // ▼ 远离银幕后退
+    left:     { x: -1, z: 0 },  // ◀ 左平移
+    right:    { x: 1, z: 0 }    // ▶ 右平移
 };
 
 export function setupDPad() {
