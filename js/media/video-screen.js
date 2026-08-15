@@ -62,8 +62,17 @@ function handleMediaUpload(e) {
             state.renderer.toneMappingExposure = 1.1;
         }
 
-        // 通知视频控制面板刷新
-        import('./ui/video-controls.js').then(({ onMediaLoaded }) => onMediaLoaded());
+        // v6：自动开始播放，无需用户手动点击播放按钮
+        media.play().catch(() => {
+            console.log('[IMAX] 自动播放被浏览器阻止（可能需要用户交互）');
+        });
+
+        // 通知视频控制面板刷新（含播放按钮状态同步）
+        import('./ui/video-controls.js').then(({ onMediaLoaded, updatePlayButton }) => {
+            onMediaLoaded();
+            // 延迟一帧更新播放按钮为"暂停"状态
+            requestAnimationFrame(() => updatePlayButton());
+        });
 
         // 初始化立体空间音效音频图
         import('./audio-spatial.js').then(({ initSpatialAudio }) => {
