@@ -16,10 +16,16 @@ export function buildScreen() {
     }
     geo.computeVertexNormals();
 
-    // v6：纯白色材质作为基底（确保不播放时是白幕）
+    // v7：纯白色材质作为基底（确保不播放时是白幕）
+    // ★ toneMapped:false —— 银幕直接显示视频/白幕原始颜色，
+    //   不受 ACES 色调映射压暗，避免播放视频时整个画面发灰、偏暗
     const mesh = new THREE.Mesh(
         geo,
-        new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide })
+        new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            side: THREE.DoubleSide,
+            toneMapped: false
+        })
     );
     mesh.position.set(0, height / 2 + 0.8, -HALL.depth / 2 + HALL.screen.zOffset);
     state.scene.add(mesh);
