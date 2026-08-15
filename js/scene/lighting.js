@@ -1,6 +1,7 @@
 // 场景构建：灯光系统（双模式：暗场观影 / 开灯浏览）
-// 关灯 = 极低环境光，保留暗场氛围
-// 开灯 = 顶部聚光灯阵列均匀照亮全厅（不影响银幕区域）
+// v5：提升整体亮度，让影院更亮堂（参考图3效果）
+// 关灯 = 中等亮度环境光，保留观影氛围
+// 开灯 = 顶部聚光灯阵列均匀照亮全厅（明亮如白昼）
 import * as THREE from 'three';
 import { state } from '../core/state.js';
 import { HALL } from '../data/hall-config.js';
@@ -14,11 +15,12 @@ const lights = {
 
 export function setupLighting() {
     // ===== 基础环境光（始终存在）=====
-    lights.ambient = new THREE.AmbientLight(0x0a0a18, 0.15);
+    // v5：提升默认亮度，让影院不再过暗
+    lights.ambient = new THREE.AmbientLight(0x1a1a2e, 0.45);
     state.scene.add(lights.ambient);
 
-    // 银幕方向极微弱补光（让暗场下银幕轮廓隐约可见）
-    lights.screenFill = new THREE.DirectionalLight(0x181830, 0.04);
+    // 银幕方向补光（让银幕轮廓清晰可见）
+    lights.screenFill = new THREE.DirectionalLight(0x2a2a4a, 0.12);
     lights.screenFill.position.set(0, 8, 20);
     state.scene.add(lights.screenFill);
 
@@ -56,32 +58,32 @@ export function setLightsOn(on) {
     if (!lights.ambient) return;
 
     if (on) {
-        // ===== 开灯模式：顶部聚光灯全开 + 环境光增强 =====
-        lights.ambient.intensity = 0.55;
-        lights.ambient.color.setHex(0xd8dce8);   // 冷白色调
+        // ===== 开灯模式：顶部聚光灯全开 + 环境光增强（明亮亮堂）=====
+        lights.ambient.intensity = 0.85;
+        lights.ambient.color.setHex(0xe8e8f0);   // 明亮冷白色调
 
         lights.ceilingSpots.forEach(spot => {
             spot.visible = true;
-            spot.intensity = 2.8;               // 每盏聚光灯亮度
+            spot.intensity = 4.5;               // 每盏聚光灯亮度提升
         });
 
-        lights.screenFill.intensity = 0.15;
+        lights.screenFill.intensity = 0.25;
 
-        // 曝光提升
-        if (state.renderer) state.renderer.toneMappingExposure = 1.6;
+        // 曝光提升到明亮水平
+        if (state.renderer) state.renderer.toneMappingExposure = 2.2;
 
     } else {
-        // ===== 关灯模式：暗场观影 =====
-        lights.ambient.intensity = 0.15;
-        lights.ambient.color.setHex(0x0a0a18);
+        // ===== 关灯模式：中等亮度观影（v5：不再漆黑）=====
+        lights.ambient.intensity = 0.45;
+        lights.ambient.color.setHex(0x1a1a2e);
 
         lights.ceilingSpots.forEach(spot => {
             spot.visible = false;
             spot.intensity = 0;
         });
 
-        lights.screenFill.intensity = 0.04;
+        lights.screenFill.intensity = 0.12;
 
-        if (state.renderer) state.renderer.toneMappingExposure = 0.7;
+        if (state.renderer) state.renderer.toneMappingExposure = 1.2;
     }
 }

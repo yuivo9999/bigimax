@@ -17,7 +17,8 @@ export function buildScreen() {
 
     const mesh = new THREE.Mesh(
         geo,
-        new THREE.MeshBasicMaterial({ color: 0x04040c, side: THREE.DoubleSide })
+        // v5：默认白幕效果（不播放视频时显示白色银幕，像真实影院）
+        new THREE.MeshBasicMaterial({ color: 0xe8e8e8, side: THREE.DoubleSide })
     );
     mesh.position.set(0, height / 2 + 0.8, -HALL.depth / 2 + HALL.screen.zOffset);
     state.scene.add(mesh);
@@ -90,20 +91,45 @@ function buildScreenGlow() {
     state.scene.add(g);
 }
 
-// 默认银幕内容（未上传视频时显示）
+// 默认银幕内容（v5：白幕效果，不播放视频时显示白色银幕）
 export function createDefaultScreenContent() {
     const c = document.createElement('canvas');
     c.width = 1024; c.height = 748;
     const x = c.getContext('2d');
-    const g = x.createRadialGradient(512, 374, 0, 512, 374, 500);
-    g.addColorStop(0, '#080818'); g.addColorStop(0.6, '#040410'); g.addColorStop(1, '#020208');
-    x.fillStyle = g; x.fillRect(0, 0, 1024, 748);
-    x.fillStyle = 'rgba(50,60,100,0.2)'; x.font = 'bold 72px Arial'; x.textAlign = 'center';
-    x.fillText('IMAX', 512, 360);
-    x.font = '28px Arial'; x.fillStyle = 'rgba(50,60,100,0.15)';
-    x.fillText('GT LASER', 512, 400);
-    x.fillText('27.8 × 20.3 m', 512, 440);
-    x.fillText('📹 上传视频开始播放 →', 512, 480);
+
+    // 白幕基底（模拟真实影院白色银幕的轻微光泽感）
+    const g = x.createLinearGradient(0, 0, 0, 748);
+    g.addColorStop(0, '#f0f0f0');     // 顶部微亮
+    g.addColorStop(0.3, '#e8e8e8');   // 上部
+    g.addColorStop(0.5, '#dddddd');   // 中心微暗（银幕中心凹陷感）
+    g.addColorStop(0.7, '#e8e8e8');   // 下部
+    g.addColorStop(1, '#f2f2f2');     // 底部微亮
+    x.fillStyle = g;
+    x.fillRect(0, 0, 1024, 748);
+
+    // 银幕顶部聚光灯照射效果（3个光斑，模拟图3顶部灯光）
+    for (let i = 0; i < 3; i++) {
+        const cx = 256 + i * 256; // 三个光斑均匀分布
+        const sg = x.createRadialGradient(cx, 80, 0, cx, 80, 180);
+        sg.addColorStop(0, 'rgba(255,255,255,0.35)');
+        sg.addColorStop(0.5, 'rgba(240,240,245,0.15)');
+        sg.addColorStop(1, 'rgba(200,200,200,0)');
+        x.fillStyle = sg;
+        x.fillRect(cx - 180, 0, 360, 280);
+    }
+
+    // 轻微边框阴影（银幕边缘微暗）
+    const edgeShadow = x.createLinearGradient(0, 0, 40, 0);
+    edgeShadow.addColorStop(0, 'rgba(120,120,130,0.25)');
+    edgeShadow.addColorStop(1, 'rgba(120,120,130,0)');
+    x.fillStyle = edgeShadow;
+    x.fillRect(0, 0, 40, 748);
+
+    const edgeShadowR = x.createLinearGradient(1024, 0, 984, 0);
+    edgeShadowR.addColorStop(0, 'rgba(120,120,130,0.25)');
+    edgeShadowR.addColorStop(1, 'rgba(120,120,130,0)');
+    x.fillStyle = edgeShadowR;
+    x.fillRect(984, 0, 40, 748);
 
     const tex = new THREE.CanvasTexture(c);
     state.refs.screenMesh.material.map = tex;
