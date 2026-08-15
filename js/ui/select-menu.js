@@ -130,10 +130,12 @@ export function confirmSeatSelect() {
         // Y: 阶梯高度 + 人眼高度
         const y = (row - 1) * seat.stepPerRow + 1.6; // 1.6m 眼睛高度
 
-        // 平滑移动相机
+        // 平滑移动相机到座位，并正对银幕中心
         if (state.camera) {
             state.camera.position.set(x, y, z);
-            state.camera.lookAt(0, HALL.screen.height / 2, z - 10);
+            // 正对银幕中心（银幕在 z = -HALL.depth/2 + HALL.screen.zOffset）
+            const screenZ = -HALL.depth / 2 + HALL.screen.zOffset;
+            state.camera.lookAt(0, HALL.screen.height / 2 + 0.8, screenZ);
         }
 
         document.getElementById('seatPicker').classList.remove('show');
