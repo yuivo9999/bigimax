@@ -12,7 +12,7 @@ const fps = {
     yaw: 0,            // 正对银幕中心（水平无偏移）
     pitch: 0.10,       // 微微仰视感受银幕高度
     moveSpeed: 3.5,    // 游动速度 (m/s)
-    lookSensitivity: 0.002,  // 视角灵敏度
+    lookSensitivity: 0.0024,  // v6：默认灵敏度 1.2x（原0.002 × 1.2）
     keyboard: {}      // 键盘状态（桌面调试用）
 };
 
