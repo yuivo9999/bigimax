@@ -1,4 +1,5 @@
-// 场景构建：IMAX GT 巨型银幕（曲面 + 边框 + 光晕 + 默认画面）
+// 场景构建：IMAX GT 巨型银幕（曲面 + 边框 + 白幕默认画面）
+// v6：默认显示白幕（参考图4），停止播放时也恢复白幕
 import * as THREE from 'three';
 import { state } from '../core/state.js';
 import { HALL } from '../data/hall-config.js';
@@ -7,7 +8,7 @@ export function buildScreen() {
     const { width, height, curvature } = HALL.screen;
 
     // 高细分曲面银幕
-    const geo = new THREE.PlaneGeometry(width, height, 48, 36);
+    const geo = new THREE.PlaneGeometry(width, height, 64, 48);
     const pos = geo.attributes.position;
     for (let i = 0; i < pos.count; i++) {
         const x = pos.getX(i);
@@ -15,10 +16,10 @@ export function buildScreen() {
     }
     geo.computeVertexNormals();
 
+    // v6：纯白色材质作为基底（确保不播放时是白幕）
     const mesh = new THREE.Mesh(
         geo,
-        // v5：默认白幕效果（不播放视频时显示白色银幕，像真实影院）
-        new THREE.MeshBasicMaterial({ color: 0xe8e8e8, side: THREE.DoubleSide })
+        new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide })
     );
     mesh.position.set(0, height / 2 + 0.8, -HALL.depth / 2 + HALL.screen.zOffset);
     state.scene.add(mesh);
@@ -27,7 +28,6 @@ export function buildScreen() {
     state.refs.screenMesh = mesh;
 
     buildMassiveScreenFrame();
-    buildScreenGlow();
 }
 
 // 厚重金属边框
@@ -91,47 +91,57 @@ function buildScreenGlow() {
     state.scene.add(g);
 }
 
-// 默认银幕内容（v5：白幕效果，不播放视频时显示白色银幕）
+// 默认银幕内容（v6：纯白幕效果，参考图4）
 export function createDefaultScreenContent() {
+    showWhiteScreen();
+}
+
+// v6：显示白幕（供停止按钮调用，也作为默认内容）
+// 生成一张白色带轻微光泽的画布贴到银幕
+export function showWhiteScreen() {
     const c = document.createElement('canvas');
     c.width = 1024; c.height = 748;
     const x = c.getContext('2d');
 
-    // 白幕基底（模拟真实影院白色银幕的轻微光泽感）
-    const g = x.createLinearGradient(0, 0, 0, 748);
-    g.addColorStop(0, '#f0f0f0');     // 顶部微亮
-    g.addColorStop(0.3, '#e8e8e8');   // 上部
-    g.addColorStop(0.5, '#dddddd');   // 中心微暗（银幕中心凹陷感）
-    g.addColorStop(0.7, '#e8e8e8');   // 下部
-    g.addColorStop(1, '#f2f2f2');     // 底部微亮
-    x.fillStyle = g;
+    // 纯白基底
+    x.fillStyle = '#f5f5f5';
     x.fillRect(0, 0, 1024, 748);
 
-    // 银幕顶部聚光灯照射效果（3个光斑，模拟图3顶部灯光）
+    // 顶部聚光灯照射光斑（3个，模拟真实影院灯光打在白幕上的效果）
     for (let i = 0; i < 3; i++) {
-        const cx = 256 + i * 256; // 三个光斑均匀分布
-        const sg = x.createRadialGradient(cx, 80, 0, cx, 80, 180);
-        sg.addColorStop(0, 'rgba(255,255,255,0.35)');
-        sg.addColorStop(0.5, 'rgba(240,240,245,0.15)');
-        sg.addColorStop(1, 'rgba(200,200,200,0)');
+        const cx = 200 + i * 312;
+        const sg = x.createRadialGradient(cx, 60, 0, cx, 60, 220);
+        sg.addColorStop(0, 'rgba(255,255,255,0.6)');
+        sg.addColorStop(0.4, 'rgba(248,248,252,0.25)');
+        sg.addColorStop(1, 'rgba(220,220,225,0)');
         x.fillStyle = sg;
-        x.fillRect(cx - 180, 0, 360, 280);
+        x.fillRect(cx - 220, 0, 440, 320);
     }
 
-    // 轻微边框阴影（银幕边缘微暗）
-    const edgeShadow = x.createLinearGradient(0, 0, 40, 0);
-    edgeShadow.addColorStop(0, 'rgba(120,120,130,0.25)');
-    edgeShadow.addColorStop(1, 'rgba(120,120,130,0)');
-    x.fillStyle = edgeShadow;
-    x.fillRect(0, 0, 40, 748);
+    // 轻微边缘渐暗（银幕边框阴影感）
+    const edgeGrad = x.createLinearGradient(0, 0, 50, 0);
+    edgeGrad.addColorStop(0, 'rgba(160,160,170,0.18)');
+    edgeGrad.addColorStop(1, 'rgba(160,160,170,0)');
+    x.fillStyle = edgeGrad;
+    x.fillRect(0, 0, 50, 748);
 
-    const edgeShadowR = x.createLinearGradient(1024, 0, 984, 0);
-    edgeShadowR.addColorStop(0, 'rgba(120,120,130,0.25)');
-    edgeShadowR.addColorStop(1, 'rgba(120,120,130,0)');
-    x.fillStyle = edgeShadowR;
-    x.fillRect(984, 0, 40, 748);
+    const edgeGradR = x.createLinearGradient(1024, 0, 974, 0);
+    edgeGradR.addColorStop(0, 'rgba(160,160,170,0.18)');
+    edgeGradR.addColorStop(1, 'rgba(160,160,170,0)');
+    x.fillStyle = edgeGradR;
+    x.fillRect(974, 0, 50, 748);
 
+    // 应用到银幕
     const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+
+    // 清除旧视频纹理
+    if (state.refs.videoTexture) {
+        state.refs.videoTexture.dispose();
+        state.refs.videoTexture = null;
+    }
+
     state.refs.screenMesh.material.map = tex;
+    state.refs.screenMesh.material.color.setHex(0xffffff);
     state.refs.screenMesh.material.needsUpdate = true;
 }
