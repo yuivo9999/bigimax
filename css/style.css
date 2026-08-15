@@ -245,6 +245,32 @@ html, body {
     will-change: transform;
 }
 
+/* 视角复位按钮（位于右侧视角摇杆上方） */
+.reset-view-btn {
+    width: 88px; height: 40px;
+    border-radius: 20px;
+    border: 1.5px solid rgba(255,180,80,0.4);
+    background: rgba(40,30,15,0.82);
+    color: rgba(255,210,150,0.92);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 3px 14px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08);
+}
+.reset-view-btn:active {
+    transform: scale(0.92);
+    background: rgba(255,180,80,0.25);
+    border-color: rgba(255,180,80,0.6);
+}
+
 .action-buttons { display: flex; gap: 10px; }
 .action-btn {
     width: 48px; height: 48px;
