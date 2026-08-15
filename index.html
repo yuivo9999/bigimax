@@ -17,14 +17,14 @@
     <!-- 顶部信息 -->
     <div class="top-bar" id="topBar">
         <h1>IMAX GT LASER</h1>
-        <p>华南MALL激光店 · 沉浸式体验</p>
+        <p>不一样的视觉 · 沉浸式体验</p>
     </div>
 
     <!-- 右上角红色 IMAX 标识（始终显示，不参与自动隐藏） -->
     <div class="imax-badge" id="imaxBadge">IMAX</div>
 
-    <!-- 顶部 HUD：左上角时钟 + 右上角视频进度（可在功能菜单开关） -->
-    <div class="hud-top" id="hudTop">
+    <!-- 顶部 HUD（v12已改为3D银幕表面渲染，此DOM元素保留作降级备用，默认隐藏） -->
+    <div class="hud-top hidden" id="hudTop">
         <div class="hud-clock" id="hudClock">--:--:--</div>
         <div class="hud-video-time" id="hudVideoTime">0:00 / 0:00</div>
     </div>
@@ -216,7 +216,7 @@
             <div class="vc-skip-row">
                 <span style="color: rgba(200,200,220,0.7); font-size: 13px; white-space: nowrap;">跳过末尾</span>
                 <input type="number" class="vc-skip-input" id="vcSkipInput"
-                       min="0" max="60" value="5" placeholder="秒数">
+                       min="0" max="60" value="3" placeholder="秒数">
                 <span style="color: rgba(200,200,220,0.7); font-size: 13px;">秒</span>
                 <button class="vc-skip-save" id="vcSkipSave">保存设置</button>
             </div>
