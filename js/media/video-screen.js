@@ -89,14 +89,14 @@ function handleMediaUpload(e) {
     media.load();
 }
 
-// 视频纹理（性能优化版）
+// 视频纹理（v5：恢复高质量设置，保持视频播放清晰度）
 function THREEVideoTexture(video) {
     const tex = new THREE.VideoTexture(video);
     tex.colorSpace = THREE.SRGBColorSpace;
-    tex.minFilter = THREE.LinearFilter;      // 不用 Mipmap（省显存+带宽）
+    tex.minFilter = THREE.LinearMipmapLinearFilter;   // v5：恢复 Mipmap（更清晰的缩放）
     tex.magFilter = THREE.LinearFilter;
-    tex.anisotropy = 1;                       // 降低各向异性（移动端省GPU）
-    tex.generateMipmaps = false;             // 不生成 Mipmap
+    tex.anisotropy = state.renderer.capabilities.getMaxAnisotropy(); // v5：恢复最大各向异性（斜看清晰）
+    tex.generateMipmaps = true;                       // v5：恢复 Mipmap 生成
     return tex;
 }
 
