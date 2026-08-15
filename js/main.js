@@ -88,11 +88,12 @@ async function init() {
         catch (e) { diagError('银幕构建', e); }
         try { buildSeats(); }
         catch (e) { diagError('座椅构建', e); }
-        try { buildStairs(); }
-        catch (e) { diagError('阶梯构建', e); }
+        // 楼梯已移除（v5：只保留座椅区，去掉偏位的侧面阶梯）
+        // try { buildStairs(); }
+        // catch (e) { diagError('阶梯构建', e); }
         try { setupLighting(); }
         catch (e) { diagError('灯光设置', e); }
-        diag('✅ 3/7 场景构建完成', '环境·银幕·座椅·阶梯·灯光');
+        diag('✅ 3/7 场景构建完成', '环境·银幕·座椅·灯光');
 
         try { createDefaultScreenContent(); }
         catch (e) { diagError('默认内容', e); }
@@ -139,8 +140,8 @@ async function init() {
         setTimeout(function () {
             var ls = document.getElementById('loadingScreen');
             if (ls) ls.classList.add('hidden');
-            showToast('👆 使用下方摇杆在影厅中自由走动');
-            showToast('⬇️ SELECT / START 打开功能菜单');
+            showToast('👆 使用下方摇杆在影厅中自由游动');
+            showToast('⬇️ SELECT 选座 / START 播放控制');
         }, 1500);
 
         diag('✅ 7/7 全部完成', 'IMAX GT 影厅已就绪');
@@ -160,8 +161,9 @@ function setupTouchControls() {
         inputState.moveZ = -dy;
     });
     setupJoystick('lookJoystickBase', 'lookStick', function (dx, dy) {
-        inputState.lookX = dx;
-        inputState.lookY = dy;
+        // 右摇杆控制视角：上下左右方向取反（修正反向问题）
+        inputState.lookX = -dx;
+        inputState.lookY = -dy;
     });
 }
 
