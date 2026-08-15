@@ -25,15 +25,6 @@ export function initMaterials() {
         bumpScale: 0.02
     });
 
-    materials.seatFabric = new THREE.MeshStandardMaterial({
-        map: genSeatFabric(),
-        color: 0xaa6666,
-        roughness: 0.78,
-        metalness: 0.02,
-        bumpMap: genSeatFabric(),
-        bumpScale: 0.01
-    });
-
     materials.stairTile = new THREE.MeshStandardMaterial({
         map: genStairTile(),
         color: 0xcc9944,
@@ -107,25 +98,6 @@ function genWallFabric() {
     const tex = new THREE.CanvasTexture(canvas);
     tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
     return tex;
-}
-
-// ===== 座椅面料 =====
-function genSeatFabric() {
-    const size = 256;
-    const canvas = document.createElement('canvas');
-    canvas.width = size; canvas.height = size;
-    const ctx = canvas.getContext('2d');
-    const g = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size * 0.7);
-    g.addColorStop(0, '#6b1818'); g.addColorStop(0.7, '#5a1414'); g.addColorStop(1, '#4a1010');
-    ctx.fillStyle = g; ctx.fillRect(0, 0, size, size);
-    for (let i = 0; i < 40000; i++) {
-        const v = 80 + Math.random() * 40;
-        ctx.fillStyle = `rgb(${v},${v * 0.2},${v * 0.2})`;
-        ctx.fillRect(Math.random() * size, Math.random() * size, 1, 1);
-    }
-    ctx.strokeStyle = 'rgba(90,20,20,0.5)'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
-    ctx.strokeRect(8, 8, size - 16, size - 16);
-    return new THREE.CanvasTexture(canvas);
 }
 
 // ===== 阶梯地砖 =====
