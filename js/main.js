@@ -41,6 +41,9 @@ import { inputState } from './controls/input-state.js';
 // 顶部 HUD 开关状态（与 state.ui.hudEnabled 同步）
 let hudEnabled = state.ui.hudEnabled;
 
+// OSD 时钟文字缓存（提前声明，避免 TDZ —— 渲染循环可能在模块初始化完成前调用 updateHudVideoTime）
+let lastClockText = '--:--:--';
+
 // ======== 诊断：在加载画面显示当前步骤 ========
 function diag(step, detail) {
     var el = document.getElementById('loadingText');
@@ -207,9 +210,6 @@ function formatHudTime(s) {
     const sec = Math.floor(s % 60);
     return `${m}:${String(sec).padStart(2, '0')}`;
 }
-
-// 缓存当前时钟文字（每秒更新一次，避免每帧格式化）
-let lastClockText = '--:--:--';
 
 // 时钟每秒刷新 → 绘制到3D银幕OSD画布
 setInterval(() => {
