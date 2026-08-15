@@ -161,9 +161,9 @@ function setupTouchControls() {
         inputState.moveZ = -dy;
     });
     setupJoystick('lookJoystickBase', 'lookStick', function (dx, dy) {
-        // 右摇杆控制视角：上下左右方向取反（修正反向问题）
-        inputState.lookX = -dx;
-        inputState.lookY = -dy;
+        // v6：右摇杆视角控制（左右取反，上下正常）
+        inputState.lookX = -dx;   // 左右方向取反
+        inputState.lookY = dy;    // 上下方向恢复正常（v5的-dy导致上下反了）
     });
 }
 
