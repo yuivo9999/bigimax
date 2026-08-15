@@ -59,7 +59,8 @@ function handleMediaUpload(e) {
             state.refs.screenMesh.material.map = tex;
             state.refs.screenMesh.material.color.setHex(0xffffff);
             state.refs.screenMesh.material.needsUpdate = true;
-            state.renderer.toneMappingExposure = 1.1;
+            // 银幕已 toneMapped:false 显示真实亮色；此处略微提升曝光让影厅不过暗
+            state.renderer.toneMappingExposure = 1.25;
         }
 
         // v6：自动开始播放，无需用户手动点击播放按钮
