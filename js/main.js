@@ -29,7 +29,7 @@ import { setupMediaUpload } from './media/video-screen.js';
 import { addDustParticles, updateDust } from './extensions/particles.js';
 
 // UI 面板
-import { initSelectMenu, confirmSeatSelect } from './ui/select-menu.js';
+import { initSelectMenu } from './ui/select-menu.js';
 import { initVideoControls, updateDisplay as updateVCDisplay, checkLoopAndSeek, onMediaLoaded } from './ui/video-controls.js';
 
 // 媒体：空间音效
@@ -37,6 +37,9 @@ import { updateSpatialListener } from './media/audio-spatial.js';
 
 import { state } from './core/state.js';
 import { inputState } from './controls/input-state.js';
+
+// 顶部 HUD 开关状态（与 state.ui.hudEnabled 同步）
+let hudEnabled = state.ui.hudEnabled;
 
 // ======== 诊断：在加载画面显示当前步骤 ========
 function diag(step, detail) {
@@ -126,12 +129,10 @@ async function init() {
         try { initVideoControls(); }
         catch (e) { diagError('视频控制面板', e); }
 
-        // 5. 选座确认按钮绑定
+        // 同步顶部 HUD 初始可见性
         try {
-            document.getElementById('seatConfirmBtn').addEventListener('click', function () {
-                confirmSeatSelect();
-                resetHideTimer();
-            });
+            const hud = document.getElementById('hudTop');
+            if (hud && !hudEnabled) hud.classList.add('hidden');
         } catch (e) { /* 容忍 */ }
 
         diag('✅ 5/7 UI 面板就绪', 'SELECT菜单 · START控制面板');
@@ -187,6 +188,94 @@ export function showToast(msg) {
 }
 window.showToast = showToast;
 
+// ======== 顶部 HUD：时钟 + 视频进度 ========
+
+export function toggleHud() {
+    hudEnabled = !hudEnabled;
+    state.ui.hudEnabled = hudEnabled;
+    const hud = document.getElementById('hudTop');
+    if (hud) hud.classList.toggle('hidden', !hudEnabled);
+    return hudEnabled;
+}
+
+function formatClock(d) {
+    const p = n => String(n).padStart(2, '0');
+    return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+function formatHudTime(s) {
+    if (!isFinite(s) || s < 0) s = 0;
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${String(sec).padStart(2, '0')}`;
+}
+
+// 时钟每秒刷新（与渲染循环解耦）
+setInterval(() => {
+    if (!hudEnabled) return;
+    const c = document.getElementById('hudClock');
+    if (c) c.textContent = formatClock(new Date());
+}, 1000);
+
+// 在渲染循环中刷新右上角视频进度
+function updateHudVideoTime() {
+    if (!hudEnabled) return;
+    const me = state.refs.mediaElement;
+    const vt = document.getElementById('hudVideoTime');
+    if (!vt) return;
+    if (me) {
+        vt.textContent = `${formatHudTime(me.currentTime || 0)} / ${formatHudTime(me.duration || 0)}`;
+    } else {
+        vt.textContent = '0:00 / 0:00';
+    }
+}
+
+// ======== 横屏全屏沉浸模式 ========
+export function toggleFullscreen() {
+    const doc = document;
+    const fsEl = doc.fullscreenElement || doc.webkitFullscreenElement;
+    if (!fsEl) {
+        const el = doc.documentElement;
+        const req = el.requestFullscreen || el.webkitRequestFullscreen;
+        if (req) {
+            try { req.call(el); }
+            catch (e) { console.warn('[IMAX] 进入全屏失败', e); }
+        } else {
+            showToast('⚠️ 当前浏览器不支持全屏（iOS Safari 请改用系统全屏）');
+        }
+    } else {
+        const exit = doc.exitFullscreen || doc.webkitExitFullscreen;
+        if (exit) { try { exit.call(doc); } catch (e) { /* 忽略 */ } }
+    }
+}
+
+function syncFullscreenLabel() {
+    const btn = document.getElementById('menuFullscreen');
+    if (!btn) return;
+    const on = !!(document.fullscreenElement || document.webkitFullscreenElement);
+    btn.querySelector('.menu-icon').textContent = on ? '🔳' : '🔲';
+    btn.querySelector('.menu-label').textContent = on ? '退出全屏' : '全屏模式';
+}
+document.addEventListener('fullscreenchange', syncFullscreenLabel);
+document.addEventListener('webkitfullscreenchange', syncFullscreenLabel);
+
+// 横屏时尽量自动进入全屏（沉浸式）；竖屏退出全屏
+window.addEventListener('orientationchange', () => {
+    const landscape = window.innerWidth > window.innerHeight;
+    const doc = document;
+    if (landscape) {
+        const el = doc.documentElement;
+        const req = el.requestFullscreen || el.webkitRequestFullscreen;
+        if (req && !doc.fullscreenElement && !doc.webkitFullscreenElement) {
+            try { req.call(el); } catch (e) { /* 需用户手势，静默忽略 */ }
+        }
+    } else {
+        const exit = doc.exitFullscreen || doc.webkitExitFullscreen;
+        if (exit && (doc.fullscreenElement || doc.webkitFullscreenElement)) {
+            try { exit.call(doc); } catch (e) { /* 忽略 */ }
+        }
+    }
+});
+
 // ======== 渲染主循环 ========
 var lastTime = 0;
 function animate() {
@@ -207,6 +296,8 @@ function animate() {
         checkLoopAndSeek();
         updateVCDisplay();
     }
+
+    updateHudVideoTime();
 
     updateSpatialListener(state.camera);
 
