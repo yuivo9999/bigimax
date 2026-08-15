@@ -55,8 +55,8 @@ export function updateFPS(dt) {
     // totalMZ > 0 → 向银幕前进（-Z 方向在屏幕空间是"前方"）
     const forward = new THREE.Vector3(-sinYaw, 0, -cosYaw)
         .multiplyScalar(totalMZ * fps.moveSpeed * dt);
-    // 左右平移
-    const strafe = new THREE.Vector3(-cosYaw, 0, sinYaw)
+    // 左右平移（修正：+X 为屏幕右方，moveX>0 应向右移动）
+    const strafe = new THREE.Vector3(cosYaw, 0, -sinYaw)
         .multiplyScalar(totalMX * fps.moveSpeed * dt);
 
     const newPos = fps.position.clone().add(forward).add(strafe);
@@ -87,4 +87,15 @@ export function resetPosition() {
     fps.position.set(0, 3.4, 11.6);
     fps.yaw = 0;
     fps.pitch = 0.10;
+
+    // 立即应用到相机，确保复位即时生效（无需等待下一帧 updateFPS）
+    if (state.camera) {
+        state.camera.position.copy(fps.position);
+        const lookDir = new THREE.Vector3(
+            -Math.sin(fps.yaw) * Math.cos(fps.pitch),
+            Math.sin(fps.pitch),
+            -Math.cos(fps.yaw) * Math.cos(fps.pitch)
+        );
+        state.camera.lookAt(fps.position.clone().add(lookDir));
+    }
 }
